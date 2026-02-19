@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+
+<html lang="pl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Activo - Zaawansowana Wyszukiwarka</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+```
+<style>
+    :root { --primary: #2ecc71; --dark: #0b3d91; --bg: #f4f6f9; --white: #ffffff; --danger: #e74c3c; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Poppins', sans-serif; margin: 0; background: var(--bg); overflow-x: hidden; }
+
+    .top-nav { background: var(--dark); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
+    .top-nav i { font-size: 1.1em; cursor: pointer; }
+    .nav-user { display: flex; align-items: center; gap: 12px; }
+    .nav-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85em; cursor: pointer; }
+
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e0e0e0; display: flex; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.08); }
+    .bottom-nav-item { flex: 1; padding: 10px 5px; text-align: center; cursor: pointer; font-size: 0.65em; color: #999; transition: color 0.2s; }
+    .bottom-nav-item i { display: block; font-size: 1.4em; margin-bottom: 3px; }
+    .bottom-nav-item.active { color: var(--dark); font-weight: 600; }
+    .bottom-nav-item.active i { color: var(--primary); }
+
+    .side-panel { position: fixed; top: 0; height: 100%; width: 280px; background: var(--dark); color: white; transition: 0.3s; z-index: 2000; padding: 60px 20px 20px; }
+    .panel-left { left: -280px; }
+    .panel-left.open { left: 0; }
+    .panel-right { right: -280px; background: white; color: #333; }
+    .panel-right.open { right: 0; }
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
+    .overlay.show { display: block; }
+
+    .container { padding: 20px; padding-bottom: 80px; }
+
+    .btn-more { background: white; border: 1px solid var(--dark); padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 20px; font-weight: 600; cursor: pointer; font-family: 'Poppins', sans-serif; }
+    .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .card img { width: 100%; height: 150px; object-fit: cover; }
+    .card-body { padding: 15px; }
+    .card-address { font-size: 0.78em; color: #888; margin: 4px 0 8px; display: flex; align-items: center; gap: 5px; }
+    .card-address i { color: var(--dark); }
+    .courts-badge { display: inline-block; background: #e8f4fd; color: var(--dark); font-size: 0.75em; font-weight: 700; padding: 3px 8px; border-radius: 20px; margin-left: 8px; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8em; margin: 10px 0; color: #666; }
+    .prop i { color: var(--primary); margin-right: 5px; }
+    .card-actions { display: flex; gap: 10px; margin-top: 10px; }
+    .btn-map { background: var(--dark); color: white; border: none; padding: 10px; flex: 1; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85em; font-family: 'Poppins', sans-serif; }
+    .btn-reserve { background: var(--primary); color: white; border: none; padding: 10px; flex: 1; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85em; font-family: 'Poppins', sans-serif; }
+
+    .filter-item { margin-bottom: 15px; }
+    .filter-item label { display: block; font-size: 0.8em; font-weight: 600; margin-bottom: 5px; }
+    select, input[type="email"], input[type="password"], input[type="text"] { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-family: 'Poppins', sans-serif; font-size: 0.9em; }
+    .btn-apply { background: var(--primary); color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: 700; margin-top: 20px; cursor: pointer; font-family: 'Poppins', sans-serif; font-size: 0.95em; }
+
+    .map-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 3000; display: flex; align-items: flex-end; }
+    .map-modal-content { background: white; width: 100%; border-radius: 20px 20px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto; }
+    .map-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .map-modal-header h3 { margin: 0; color: var(--dark); }
+    .btn-close { background: none; border: none; font-size: 1.4em; cursor: pointer; color: #999; }
+    #map-container { width: 100%; height: 280px; border-radius: 12px; overflow: hidden; margin-bottom: 15px; }
+    .map-info-row { display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: #555; margin-bottom: 8px; }
+    .map-info-row i { color: var(--dark); width: 16px; }
+
+    .auth-container { padding: 20px; padding-bottom: 80px; }
+    .auth-tabs { display: flex; background: white; border-radius: 12px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .auth-tab { flex: 1; padding: 14px; text-align: center; font-weight: 600; font-size: 0.9em; cursor: pointer; color: #999; border: none; background: none; font-family: 'Poppins', sans-serif; transition: all 0.2s; }
+    .auth-tab.active { background: var(--dark); color: white; }
+    .auth-form { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+    .auth-form h2 { margin: 0 0 5px; color: var(--dark); font-size: 1.3em; }
+    .auth-form p { margin: 0 0 20px; color: #888; font-size: 0.85em; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 0.8em; font-weight: 600; color: #555; margin-bottom: 6px; }
+    .form-group input { border: 1.5px solid #e0e0e0; transition: border 0.2s; }
+    .form-group input:focus { outline: none; border-color: var(--dark); }
+    .auth-error { background: #fdecea; color: var(--danger); padding: 10px 14px; border-radius: 8px; font-size: 0.82em; margin-top: 10px; }
+    .auth-success { background: #eafaf1; color: #27ae60; padding: 10px 14px; border-radius: 8px; font-size: 0.82em; margin-top: 10px; }
+    .btn-loading { opacity: 0.7; pointer-events: none; }
+
+    .profile-header { background: var(--dark); color: white; padding: 30px 20px 50px; text-align: center; }
+    .profile-avatar-big { width: 70px; height: 70px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.8em; font-weight: 700; margin: 0 auto 12px; }
+    .profile-name { font-size: 1.2em; font-weight: 700; }
+    .profile-email { font-size: 0.82em; opacity: 0.8; margin-top: 4px; }
+    .profile-body { padding: 20px; padding-bottom: 80px; margin-top: -30px; }
+    .profile-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 16px; }
+    .profile-card h4 { margin: 0 0 15px; color: var(--dark); font-size: 0.95em; }
+    .profile-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.85em; }
+    .profile-row:last-child { border-bottom: none; }
+    .profile-row span:first-child { color: #888; }
+    .profile-row span:last-child { font-weight: 600; color: #333; }
+    .btn-logout { background: #fdecea; color: var(--danger); border: none; padding: 14px; width: 100%; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: 'Poppins', sans-serif; font-size: 0.95em; }
+
+    .hero-card { background: var(--dark); color: white; padding: 25px 20px; border-radius: 12px; margin-bottom: 20px; }
+    .hero-card h2 { margin: 0 0 8px; font-size: 1.3em; }
+    .hero-card p { margin: 0 0 16px; font-size: 0.85em; opacity: 0.85; }
+</style>
+```
+
+</head>
+<body>
+<div id="root"></div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+             signOut, onAuthStateChanged, updateProfile }
+        from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, serverTimestamp }
+        from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAz01TWvm83M8OUYDevXmo1vt7q64zcbR8",
+        authDomain: "activo-2ccb5.firebaseapp.com",
+        projectId: "activo-2ccb5",
+        storageBucket: "activo-2ccb5.firebasestorage.app",
+        messagingSenderId: "158201159420",
+        appId: "1:158201159420:web:b2fdf18e9f7741fd0f0179",
+        measurementId: "G-3Y4XQE3E64"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    window.__firebase = { auth, db, createUserWithEmailAndPassword,
+        signInWithEmailAndPassword, signOut, onAuthStateChanged,
+        updateProfile, doc, setDoc, getDoc, serverTimestamp };
+</script>
+
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const DATA = [
+        { id: 1, name: "Olimpia", courts: 10, address: "ul. Warmińska 1, 61-001 Poznań", lat: 52.4064, lng: 16.9252, parking: "Tak", rental: "Tak", trainers: "Tak", shop: "Tak", testRackets: "Tak", surface: "ziemna", img: "https://images.unsplash.com/photo-1595435064212-3629224444e1?w=600" },
+        { id: 2, name: "Posir Rataje", courts: 5, address: "ul. Łukaszewicza 34, 61-762 Poznań", lat: 52.3980, lng: 16.9640, parking: "Tak", rental: "Tak", trainers: "Tak", shop: "Tak", testRackets: "Nie", surface: "ziemna", img: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=600" },
+        { id: 3, name: "FairPlayce", courts: 4, address: "ul. Ratajczaka 10, 61-815 Poznań", lat: 52.4068, lng: 16.9299, parking: "Nie", rental: "Nie", trainers: "Nie", shop: "Nie", testRackets: "Nie", surface: "twarda", img: "https://images.unsplash.com/photo-1622279457486-62dcc4a4bd13?w=600" },
+        { id: 4, name: "Kortowo", courts: 8, address: "ul. Bułgarska 67, 60-320 Poznań", lat: 52.3901, lng: 16.8902, parking: "Tak", rental: "Nie", trainers: "Nie", shop: "Tak", testRackets: "Nie", surface: "dywan", img: "https://images.unsplash.com/photo-1544333346-64e4fe18274b?w=600" }
+    ];
+
+    function MapModal({ item, onClose }) {
+        const mapRef = useRef(null);
+        const mapInstance = useRef(null);
+        useEffect(() => {
+            if (!mapRef.current || mapInstance.current) return;
+            const map = L.map(mapRef.current).setView([item.lat, item.lng], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+            const icon = L.divIcon({ html: `<div style="background:#0b3d91;color:white;padding:6px 10px;border-radius:20px;font-family:Poppins;font-weight:700;font-size:12px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3)">🎾 ${item.name}</div>`, className: '', iconAnchor: [0, 0] });
+            L.marker([item.lat, item.lng], { icon }).addTo(map);
+            mapInstance.current = map;
+            return () => { map.remove(); mapInstance.current = null; };
+        }, [item]);
+        return (
+            <div className="map-modal" onClick={e => e.target === e.currentTarget && onClose()}>
+                <div className="map-modal-content">
+                    <div className="map-modal-header">
+                        <h3>{item.name}</h3>
+                        <button className="btn-close" onClick={onClose}>✕</button>
+                    </div>
+                    <div id="map-container" ref={mapRef}></div>
+                    <div className="map-info-row"><i className="fas fa-map-marker-alt"></i> {item.address}</div>
+                    <div className="map-info-row"><i className="fas fa-layer-group"></i> Nawierzchnia: {item.surface}</div>
+                    <div className="map-info-row"><i className="fas fa-th-large"></i> Korty: {item.courts}</div>
+                    <button className="btn-apply" style={{marginTop:10}} onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lng}`, '_blank')}>
+                        <i className="fas fa-external-link-alt"></i> Otwórz w Google Maps
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    function translateError(code) {
+        const map = {
+            'auth/email-already-in-use': 'Ten adres e-mail jest już zarejestrowany.',
+            'auth/invalid-email': 'Nieprawidłowy adres e-mail.',
+            'auth/weak-password': 'Hasło jest za słabe (min. 6 znaków).',
+            'auth/user-not-found': 'Nie znaleziono konta z tym adresem e-mail.',
+            'auth/wrong-password': 'Nieprawidłowe hasło.',
+            'auth/invalid-credential': 'Nieprawidłowy e-mail lub hasło.',
+            'auth/too-many-requests': 'Zbyt wiele prób. Spróbuj ponownie za chwilę.',
+        };
+        return map[code] || 'Wystąpił błąd. Spróbuj ponownie.';
+    }
+
+    function AuthScreen() {
+        const [tab, setTab] = useState('login');
+        const [name, setName] = useState('');
+        const [email, setEmail] = useState('');
+        const [password, setPassword] = useState('');
+        const [error, setError] = useState('');
+        const [success, setSuccess] = useState('');
+        const [loading, setLoading] = useState(false);
+        const fb = window.__firebase;
+
+        const handleRegister = async () => {
+            setError(''); setSuccess('');
+            if (!name.trim()) return setError('Podaj swoje imię.');
+            if (password.length < 6) return setError('Hasło musi mieć min. 6 znaków.');
+            setLoading(true);
+            try {
+                const cred = await fb.createUserWithEmailAndPassword(fb.auth, email, password);
+                await fb.updateProfile(cred.user, { displayName: name });
+                await fb.setDoc(fb.doc(fb.db, 'users', cred.user.uid), {
+                    name, email, createdAt: fb.serverTimestamp(), role: 'user'
+                });
+                setSuccess('Konto zostało utworzone! Witaj w Activo 🎾');
+            } catch (e) { setError(translateError(e.code)); }
+            setLoading(false);
+        };
+
+        const handleLogin = async () => {
+            setError(''); setSuccess('');
+            setLoading(true);
+            try {
+                await fb.signInWithEmailAndPassword(fb.auth, email, password);
+            } catch (e) { setError(translateError(e.code)); }
+            setLoading(false);
+        };
+
+        return (
+            <div className="auth-container">
+                <div className="auth-tabs">
+                    <button className={`auth-tab ${tab==='login'?'active':''}`} onClick={() => { setTab('login'); setError(''); setSuccess(''); }}>Logowanie</button>
+                    <button className={`auth-tab ${tab==='register'?'active':''}`} onClick={() => { setTab('register'); setError(''); setSuccess(''); }}>Rejestracja</button>
+                </div>
+                <div className="auth-form">
+                    {tab === 'login'
+                        ? <><h2>Witaj z powrotem 👋</h2><p>Zaloguj się, aby rezerwować korty.</p></>
+                        : <><h2>Utwórz konto 🎾</h2><p>Dołącz do Activo i rezerwuj korty w kilka sekund.</p></>
+                    }
+                    {tab === 'register' && (
+                        <div className="form-group">
+                            <label>Imię</label>
+                            <input type="text" placeholder="np. Kamil" value={name} onChange={e => setName(e.target.value)} />
+                        </div>
+                    )}
+                    <div className="form-group">
+                        <label>Adres e-mail</label>
+                        <input type="email" placeholder="twoj@email.pl" value={email} onChange={e => setEmail(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                        <label>Hasło {tab==='register' && <span style={{color:'#aaa',fontWeight:400}}>(min. 6 znaków)</span>}</label>
+                        <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)}
+                            onKeyDown={e => e.key==='Enter' && (tab==='login' ? handleLogin() : handleRegister())} />
+                    </div>
+                    {error && <div className="auth-error"><i className="fas fa-exclamation-circle"></i> {error}</div>}
+                    {success && <div className="auth-success"><i className="fas fa-check-circle"></i> {success}</div>}
+                    <button className={`btn-apply ${loading?'btn-loading':''}`} onClick={tab==='login' ? handleLogin : handleRegister}>
+                        {loading ? 'Proszę czekać...' : tab==='login' ? 'Zaloguj się' : 'Zarejestruj się'}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    function ProfileScreen({ user }) {
+        const fb = window.__firebase;
+
+        const handleLogout = async () => { await fb.signOut(fb.auth); };
+
+        const initials = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
+        const joinDate = user.metadata?.creationTime
+            ? new Date(user.metadata.creationTime).toLocaleDateString('pl-PL', { year: 'numeric', month: 'long' })
+            : '—';
+
+        return (
+            <div>
+                <div className="profile-header">
+                    <div className="profile-avatar-big">{initials}</div>
+                    <div className="profile-name">{user.displayName || 'Użytkownik'}</div>
+                    <div className="profile-email">{user.email}</div>
+                </div>
+                <div className="profile-body">
+                    <div className="profile-card">
+                        <h4><i className="fas fa-user" style={{color:'var(--primary)',marginRight:6}}></i> Dane konta</h4>
+                        <div className="profile-row"><span>Imię</span><span>{user.displayName || '—'}</span></div>
+                        <div className="profile-row"><span>E-mail</span><span>{user.email}</span></div>
+                        <div className="profile-row"><span>Konto od</span><span>{joinDate}</span></div>
+                        <div className="profile-row"><span>Status</span><span style={{color:'var(--primary)'}}>✔ Aktywny</span></div>
+                    </div>
+                    <div className="profile-card">
+                        <h4><i className="fas fa-calendar-check" style={{color:'var(--primary)',marginRight:6}}></i> Moje rezerwacje</h4>
+                        <div style={{color:'#aaa',fontSize:'0.85em',textAlign:'center',padding:'10px 0'}}>
+                            Brak rezerwacji — zarezerwuj swój pierwszy kort! 🎾
+                        </div>
+                    </div>
+                    <button className="btn-logout" onClick={handleLogout}>
+                        <i className="fas fa-sign-out-alt"></i> Wyloguj się
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    function App() {
+        const [view, setView] = useState('home');
+        const [leftMenu, setLeftMenu] = useState(false);
+        const [filterPanel, setFilterPanel] = useState(false);
+        const [filtered, setFiltered] = useState(DATA);
+        const [mapItem, setMapItem] = useState(null);
+        const [user, setUser] = useState(undefined);
+        const [f, setF] = useState({ parking: 'all', surface: 'all', shop: 'all', testRackets: 'all' });
+
+        useEffect(() => {
+            const interval = setInterval(() => {
+                if (window.__firebase) {
+                    clearInterval(interval);
+                    const unsub = window.__firebase.onAuthStateChanged(window.__firebase.auth, u => {
+                        setUser(u || null);
+                        if (u) setView(v => v === 'auth' ? 'profile' : v);
+                    });
+                }
+            }, 100);
+        }, []);
+
+        const applyFilters = () => {
+            const res = DATA.filter(item =>
+                (f.parking==='all' || item.parking===f.parking) &&
+                (f.surface==='all' || item.surface===f.surface) &&
+                (f.shop==='all' || item.shop===f.shop) &&
+                (f.testRackets==='all' || item.testRackets===f.testRackets)
+            );
+            setFiltered(res); setFilterPanel(false);
+        };
+
+        const initials = user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || null;
+
+        return (
+            <div>
+                <div className={`overlay ${(leftMenu||filterPanel)?'show':''}`} onClick={() => { setLeftMenu(false); setFilterPanel(false); }}></div>
+                {mapItem && <MapModal item={mapItem} onClose={() => setMapItem(null)} />}
+
+                <div className={`side-panel panel-left ${leftMenu?'open':''}`}>
+                    <a href="#" style={{color:'white',display:'block',padding:'15px 0'}} onClick={() => { setView('home'); setLeftMenu(false); }}>Strona Główna</a>
+                    <a href="#" style={{color:'white',display:'block',padding:'15px 0'}} onClick={() => { setView('search'); setLeftMenu(false); }}>Wyszukiwarka</a>
+                    <a href="#" style={{color:'white',display:'block',padding:'15px 0'}} onClick={() => { setView(user ? 'profile' : 'auth'); setLeftMenu(false); }}>
+                        {user ? 'Mój profil' : 'Zaloguj się'}
+                    </a>
+                </div>
+
+                <div className={`side-panel panel-right ${filterPanel?'open':''}`}>
+                    <h3>Filtry zaawansowane</h3>
+                    <div className="filter-item"><label>Typ nawierzchni</label>
+                        <select value={f.surface} onChange={e => setF({...f,surface:e.target.value})}>
+                            <option value="all">Wszystkie</option><option value="ziemna">Ziemna</option><option value="twarda">Twarda</option><option value="dywan">Dywan</option>
+                        </select></div>
+                    <div className="filter-item"><label>Sklep na miejscu</label>
+                        <select value={f.shop} onChange={e => setF({...f,shop:e.target.value})}>
+                            <option value="all">Obojętnie</option><option value="Tak">Tak</option><option value="Nie">Nie</option>
+                        </select></div>
+                    <div className="filter-item"><label>Rakiety testowe</label>
+                        <select value={f.testRackets} onChange={e => setF({...f,testRackets:e.target.value})}>
+                            <option value="all">Obojętnie</option><option value="Tak">Tak</option><option value="Nie">Nie</option>
+                        </select></div>
+                    <div className="filter-item"><label>Parking</label>
+                        <select value={f.parking} onChange={e => setF({...f,parking:e.target.value})}>
+                            <option value="all">Obojętnie</option><option value="Tak">Tak</option><option value="Nie">Nie</option>
+                        </select></div>
+                    <button className="btn-apply" onClick={applyFilters}>ZASTOSUJ FILTRY</button>
+                </div>
+
+                <nav className="top-nav">
+                    <div onClick={() => setLeftMenu(true)}><i className="fas fa-bars"></i></div>
+                    <div style={{fontWeight:700}}>ACTIVO</div>
+                    <div className="nav-user">
+                        {user === undefined
+                            ? <i className="fas fa-circle-notch fa-spin"></i>
+                            : user
+                                ? <div className="nav-avatar" onClick={() => setView('profile')}>{initials}</div>
+                                : <span style={{fontSize:'0.8em',cursor:'pointer'}} onClick={() => setView('auth')}>Zaloguj</span>
+                        }
+                    </div>
+                </nav>
+
+                {view === 'home' && (
+                    <div className="container">
+                        <div className="hero-card">
+                            <h2>Znajdź swój kort 🎾</h2>
+                            <p>Skorzystaj z wyszukiwarki, aby filtrować po nawierzchni i usługach.</p>
+                            <button className="btn-apply" style={{marginTop:0}} onClick={() => setView('search')}>Przejdź do szukania</button>
+                        </div>
+                        {!user && (
+                            <div className="card" style={{padding:'20px'}}>
+                                <p style={{margin:'0 0 8px',fontWeight:600,color:'var(--dark)'}}>Masz już konto?</p>
+                                <p style={{margin:'0 0 12px',fontSize:'0.85em',color:'#888'}}>Zaloguj się, żeby rezerwować korty i śledzić historię rezerwacji.</p>
+                                <button className="btn-apply" style={{marginTop:0}} onClick={() => setView('auth')}>Zaloguj / Zarejestruj się</button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {view === 'search' && (
+                    <div className="container">
+                        <button className="btn-more" onClick={() => setFilterPanel(true)}>
+                            <i className="fas fa-sliders-h"></i> Więcej filtrów
+                        </button>
+                        <h4>Dostępne obiekty ({filtered.length})</h4>
+                        {filtered.map(item => (
+                            <div key={item.id} className="card">
+                                <img src={item.img} alt={item.name} />
+                                <div className="card-body">
+                                    <h4 style={{margin:'0'}}>
+                                        {item.name}
+                                        <span className="courts-badge"><i className="fas fa-th-large"></i> {item.courts} kortów</span>
+                                    </h4>
+                                    <div className="card-address"><i className="fas fa-map-marker-alt"></i>{item.address}</div>
+                                    <div className="stats-grid">
+                                        <div className="prop"><i className="fas fa-layer-group"></i> {item.surface}</div>
+                                        <div className="prop"><i className="fas fa-shopping-cart"></i> Sklep: {item.shop}</div>
+                                        <div className="prop"><i className="fas fa-circle"></i> Testy: {item.testRackets}</div>
+                                        <div className="prop"><i className="fas fa-car"></i> Parking: {item.parking}</div>
+                                    </div>
+                                    <div className="card-actions">
+                                        <button className="btn-map" onClick={() => setMapItem(item)}>
+                                            <i className="fas fa-map-marked-alt"></i> Mapa
+                                        </button>
+                                        <button className="btn-reserve" onClick={() => user ? alert('Rezerwacja: ' + item.name) : setView('auth')}>
+                                            {user ? 'Zarezerwuj' : 'Zaloguj się'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {view === 'auth' && <AuthScreen />}
+                {view === 'profile' && (user ? <ProfileScreen user={user} /> : <AuthScreen />)}
+
+                <nav className="bottom-nav">
+                    <div className={`bottom-nav-item ${view==='home'?'active':''}`} onClick={() => setView('home')}>
+                        <i className="fas fa-home"></i> Główna
+                    </div>
+                    <div className={`bottom-nav-item ${view==='search'?'active':''}`} onClick={() => setView('search')}>
+                        <i className="fas fa-search"></i> Szukaj
+                    </div>
+                    <div className={`bottom-nav-item ${view==='auth'||view==='profile'?'active':''}`} onClick={() => setView(user ? 'profile' : 'auth')}>
+                        <i className="fas fa-user"></i> {user ? 'Profil' : 'Konto'}
+                    </div>
+                </nav>
+            </div>
+        );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+
+</body>
+</html>
