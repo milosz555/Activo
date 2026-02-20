@@ -207,16 +207,23 @@
                 await fb.setDoc(fb.doc(fb.db, 'users', cred.user.uid), {
                     name, email, createdAt: fb.serverTimestamp(), role: 'user'
                 });
-                setSuccess('Konto zostało utworzone! Witaj w Activo 🎾');
+                // Wyloguj po rejestracji żeby użytkownik mógł się zalogować świadomie
+                await fb.signOut(fb.auth);
+                setSuccess('Konto zostało utworzone! Możesz się teraz zalogować 🎾');
+                setTab('login');
+                setName('');
+                // Zostaw email i hasło żeby ułatwić logowanie
             } catch (e) { setError(translateError(e.code)); }
             setLoading(false);
         };
 
         const handleLogin = async () => {
             setError(''); setSuccess('');
+            if (!email.trim()) return setError('Podaj adres e-mail.');
+            if (!password.trim()) return setError('Podaj hasło.');
             setLoading(true);
             try {
-                await fb.signInWithEmailAndPassword(fb.auth, email, password);
+                await fb.signInWithEmailAndPassword(fb.auth, email.trim(), password);
             } catch (e) { setError(translateError(e.code)); }
             setLoading(false);
         };
