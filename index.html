@@ -98,6 +98,29 @@
     .hero-card { background: var(--dark); color: white; padding: 25px 20px; border-radius: 12px; margin-bottom: 20px; }
     .hero-card h2 { margin: 0 0 8px; font-size: 1.3em; }
     .hero-card p { margin: 0 0 16px; font-size: 0.85em; opacity: 0.85; }
+
+    /* Ulubione & Ostatnio grane */
+    .fav-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 16px; display: flex; align-items: center; gap: 12px; padding: 12px; }
+    .fav-card img { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+    .fav-card-info { flex: 1; }
+    .fav-card-info h5 { margin: 0 0 3px; color: var(--dark); font-size: 0.9em; }
+    .fav-card-info span { font-size: 0.75em; color: #888; }
+    .btn-fav-remove { background: none; border: none; color: #ddd; font-size: 1.2em; cursor: pointer; padding: 5px; }
+    .btn-fav-remove:hover { color: var(--danger); }
+    .btn-heart { background: none; border: none; font-size: 1.3em; cursor: pointer; padding: 4px 8px; line-height: 1; }
+    .played-entry { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.85em; }
+    .played-entry:last-child { border-bottom: none; }
+    .played-entry-left { display: flex; flex-direction: column; gap: 2px; }
+    .played-entry-left strong { color: #333; }
+    .played-entry-left span { color: #aaa; font-size: 0.8em; }
+    .played-entry-right { color: #aaa; font-size: 0.75em; cursor: pointer; }
+    .add-played-form { background: #f9f9f9; border-radius: 8px; padding: 12px; margin-top: 10px; }
+    .add-played-form select, .add-played-form input { margin-bottom: 8px; background: white; }
+    .btn-add-small { background: var(--dark); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-family: 'Poppins', sans-serif; font-size: 0.82em; font-weight: 600; cursor: pointer; width: 100%; }
+    .section-empty { color: #bbb; font-size: 0.85em; text-align: center; padding: 15px 0; }
+    .lock-banner { background: #fff8e1; border: 1px solid #ffe082; border-radius: 12px; padding: 20px; text-align: center; margin: 20px; }
+    .lock-banner i { font-size: 2em; color: #f9a825; margin-bottom: 10px; display: block; }
+    .lock-banner p { margin: 0 0 12px; color: #555; font-size: 0.9em; }
 </style>
 ```
 
@@ -110,7 +133,7 @@
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
              signOut, onAuthStateChanged, updateProfile }
         from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, serverTimestamp }
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp }
         from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -129,7 +152,7 @@
 
     window.__firebase = { auth, db, createUserWithEmailAndPassword,
         signInWithEmailAndPassword, signOut, onAuthStateChanged,
-        updateProfile, doc, setDoc, getDoc, serverTimestamp };
+        updateProfile, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp };
 </script>
 
 <script type="text/babel">
@@ -199,32 +222,43 @@
         const handleRegister = async () => {
             setError(''); setSuccess('');
             if (!name.trim()) return setError('Podaj swoje imię.');
+            if (!email.trim()) return setError('Podaj adres e-mail.');
             if (password.length < 6) return setError('Hasło musi mieć min. 6 znaków.');
             setLoading(true);
             try {
-                const cred = await fb.createUserWithEmailAndPassword(fb.auth, email, password);
-                await fb.updateProfile(cred.user, { displayName: name });
-                await fb.setDoc(fb.doc(fb.db, 'users', cred.user.uid), {
-                    name, email, createdAt: fb.serverTimestamp(), role: 'user'
+                const cred = await fb.createUserWithEmailAndPassword(fb.auth, email.trim(), password);
+                const uid = cred.user.uid;
+                await fb.updateProfile(cred.user, { displayName: name.trim() });
+                await fb.setDoc(fb.doc(fb.db, 'users', uid), {
+                    uid: uid,
+                    name: name.trim(),
+                    email: email.trim().toLowerCase(),
+                    createdAt: fb.serverTimestamp(),
+                    role: 'user'
                 });
-                // Wyloguj po rejestracji żeby użytkownik mógł się zalogować świadomie
                 await fb.signOut(fb.auth);
-                setSuccess('Konto zostało utworzone! Możesz się teraz zalogować 🎾');
+                setSuccess('Konto utworzone! Teraz się zaloguj.');
                 setTab('login');
                 setName('');
-                // Zostaw email i hasło żeby ułatwić logowanie
-            } catch (e) { setError(translateError(e.code)); }
+                setPassword('');
+            } catch (e) {
+                console.error('Blad rejestracji:', e.code, e.message);
+                setError(translateError(e.code));
+            }
             setLoading(false);
         };
 
         const handleLogin = async () => {
             setError(''); setSuccess('');
             if (!email.trim()) return setError('Podaj adres e-mail.');
-            if (!password.trim()) return setError('Podaj hasło.');
+            if (!password.trim()) return setError('Podaj haslo.');
             setLoading(true);
             try {
-                await fb.signInWithEmailAndPassword(fb.auth, email.trim(), password);
-            } catch (e) { setError(translateError(e.code)); }
+                await fb.signInWithEmailAndPassword(fb.auth, email.trim().toLowerCase(), password);
+            } catch (e) {
+                console.error('Blad logowania:', e.code, e.message);
+                setError(translateError(e.code));
+            }
             setLoading(false);
         };
 
@@ -266,8 +300,40 @@
 
     function ProfileScreen({ user }) {
         const fb = window.__firebase;
+        const [playedList, setPlayedList] = useState([]);
+        const [showAddPlayed, setShowAddPlayed] = useState(false);
+        const [selectedCourt, setSelectedCourt] = useState(DATA[0].name);
+        const [playedDate, setPlayedDate] = useState(new Date().toISOString().split('T')[0]);
+        const [saving, setSaving] = useState(false);
+
+        const userDocRef = fb.doc(fb.db, 'users', user.uid);
+
+        useEffect(() => {
+            fb.getDoc(userDocRef).then(snap => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    setPlayedList(data.playedHistory || []);
+                }
+            });
+        }, [user.uid]);
 
         const handleLogout = async () => { await fb.signOut(fb.auth); };
+
+        const addPlayedEntry = async () => {
+            setSaving(true);
+            const entry = { court: selectedCourt, date: playedDate, addedAt: new Date().toISOString() };
+            const newList = [entry, ...playedList].slice(0, 20);
+            await fb.setDoc(userDocRef, { playedHistory: newList }, { merge: true });
+            setPlayedList(newList);
+            setShowAddPlayed(false);
+            setSaving(false);
+        };
+
+        const removePlayedEntry = async (idx) => {
+            const newList = playedList.filter((_, i) => i !== idx);
+            await fb.setDoc(userDocRef, { playedHistory: newList }, { merge: true });
+            setPlayedList(newList);
+        };
 
         const initials = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
         const joinDate = user.metadata?.creationTime
@@ -289,16 +355,82 @@
                         <div className="profile-row"><span>Konto od</span><span>{joinDate}</span></div>
                         <div className="profile-row"><span>Status</span><span style={{color:'var(--primary)'}}>✔ Aktywny</span></div>
                     </div>
+
                     <div className="profile-card">
-                        <h4><i className="fas fa-calendar-check" style={{color:'var(--primary)',marginRight:6}}></i> Moje rezerwacje</h4>
-                        <div style={{color:'#aaa',fontSize:'0.85em',textAlign:'center',padding:'10px 0'}}>
-                            Brak rezerwacji — zarezerwuj swój pierwszy kort! 🎾
-                        </div>
+                        <h4 style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                            <span><i className="fas fa-history" style={{color:'var(--primary)',marginRight:6}}></i> Ostatnio grałem</span>
+                            <button className="btn-add-small" style={{width:'auto',padding:'5px 12px'}} onClick={() => setShowAddPlayed(!showAddPlayed)}>
+                                <i className="fas fa-plus"></i> Dodaj
+                            </button>
+                        </h4>
+                        {showAddPlayed && (
+                            <div className="add-played-form">
+                                <label style={{fontSize:'0.8em',fontWeight:600,color:'#555',display:'block',marginBottom:4}}>Obiekt</label>
+                                <select value={selectedCourt} onChange={e => setSelectedCourt(e.target.value)}>
+                                    {DATA.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                                </select>
+                                <label style={{fontSize:'0.8em',fontWeight:600,color:'#555',display:'block',marginBottom:4}}>Data</label>
+                                <input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} />
+                                <button className="btn-add-small" onClick={addPlayedEntry} disabled={saving}>
+                                    {saving ? 'Zapisywanie...' : 'Zapisz'}
+                                </button>
+                            </div>
+                        )}
+                        {playedList.length === 0 && !showAddPlayed
+                            ? <div className="section-empty">Brak wpisów — dodaj gdzie ostatnio grałeś!</div>
+                            : playedList.map((entry, idx) => (
+                                <div key={idx} className="played-entry">
+                                    <div className="played-entry-left">
+                                        <strong>🎾 {entry.court}</strong>
+                                        <span>{new Date(entry.date).toLocaleDateString('pl-PL', {day:'numeric',month:'long',year:'numeric'})}</span>
+                                    </div>
+                                    <div className="played-entry-right" onClick={() => removePlayedEntry(idx)}>
+                                        <i className="fas fa-times"></i>
+                                    </div>
+                                </div>
+                            ))
+                        }
                     </div>
+
                     <button className="btn-logout" onClick={handleLogout}>
                         <i className="fas fa-sign-out-alt"></i> Wyloguj się
                     </button>
                 </div>
+            </div>
+        );
+    }
+
+    function FavouritesScreen({ user, favourites, onToggleFav }) {
+        const favItems = DATA.filter(item => favourites.includes(item.id));
+        if (!user) {
+            return (
+                <div className="lock-banner" style={{marginTop:20}}>
+                    <i className="fas fa-lock"></i>
+                    <p>Ta sekcja jest dostępna tylko dla zalogowanych użytkowników.</p>
+                    <button className="btn-apply" style={{marginTop:0}} onClick={() => window.__setView('auth')}>Zaloguj się</button>
+                </div>
+            );
+        }
+        return (
+            <div className="container">
+                <h4>Moje ulubione ({favItems.length})</h4>
+                {favItems.length === 0
+                    ? <div style={{background:'white',borderRadius:12,padding:20,textAlign:'center',color:'#aaa',fontSize:'0.85em',boxShadow:'0 4px 10px rgba(0,0,0,0.08)'}}>
+                        Brak ulubionych — kliknij ❤️ na karcie obiektu, żeby go dodać!
+                      </div>
+                    : favItems.map(item => (
+                        <div key={item.id} className="fav-card">
+                            <img src={item.img} alt={item.name} />
+                            <div className="fav-card-info">
+                                <h5>{item.name}</h5>
+                                <span><i className="fas fa-layer-group"></i> {item.surface} · {item.courts} kortów</span>
+                            </div>
+                            <button className="btn-fav-remove" onClick={() => onToggleFav(item.id)} title="Usuń z ulubionych">
+                                <i className="fas fa-heart" style={{color:'#e74c3c'}}></i>
+                            </button>
+                        </div>
+                    ))
+                }
             </div>
         );
     }
@@ -310,7 +442,11 @@
         const [filtered, setFiltered] = useState(DATA);
         const [mapItem, setMapItem] = useState(null);
         const [user, setUser] = useState(undefined);
+        const [favourites, setFavourites] = useState([]);
         const [f, setF] = useState({ parking: 'all', surface: 'all', shop: 'all', testRackets: 'all' });
+
+        // Globalny setter widoku dla FavouritesScreen
+        window.__setView = setView;
 
         useEffect(() => {
             const interval = setInterval(() => {
@@ -318,11 +454,28 @@
                     clearInterval(interval);
                     const unsub = window.__firebase.onAuthStateChanged(window.__firebase.auth, u => {
                         setUser(u || null);
-                        if (u) setView(v => v === 'auth' ? 'profile' : v);
+                        if (u) {
+                            setView(v => v === 'auth' ? 'profile' : v);
+                            // Załaduj ulubione z Firestore
+                            window.__firebase.getDoc(window.__firebase.doc(window.__firebase.db, 'users', u.uid))
+                                .then(snap => { if (snap.exists()) setFavourites(snap.data().favourites || []); });
+                        } else {
+                            setFavourites([]);
+                        }
                     });
                 }
             }, 100);
         }, []);
+
+        const toggleFav = async (itemId) => {
+            if (!user) { setView('auth'); return; }
+            const fb = window.__firebase;
+            const userRef = fb.doc(fb.db, 'users', user.uid);
+            const isFav = favourites.includes(itemId);
+            const newFavs = isFav ? favourites.filter(id => id !== itemId) : [...favourites, itemId];
+            setFavourites(newFavs);
+            await fb.setDoc(userRef, { favourites: newFavs }, { merge: true });
+        };
 
         const applyFilters = () => {
             const res = DATA.filter(item =>
@@ -344,6 +497,10 @@
                 <div className={`side-panel panel-left ${leftMenu?'open':''}`}>
                     <a href="#" style={{color:'white',display:'block',padding:'15px 0'}} onClick={() => { setView('home'); setLeftMenu(false); }}>Strona Główna</a>
                     <a href="#" style={{color:'white',display:'block',padding:'15px 0'}} onClick={() => { setView('search'); setLeftMenu(false); }}>Wyszukiwarka</a>
+                    <a href="#" style={{color:'white',display:'block',padding:'15px 0'}} onClick={() => { setView('favourites'); setLeftMenu(false); }}>
+                        <i className="fas fa-heart" style={{marginRight:8,color:'#e74c3c'}}></i>
+                        Ulubione {user && favourites.length > 0 && <span style={{background:'#e74c3c',color:'white',borderRadius:'20px',padding:'1px 7px',fontSize:'0.75em',marginLeft:4}}>{favourites.length}</span>}
+                    </a>
                     <a href="#" style={{color:'white',display:'block',padding:'15px 0'}} onClick={() => { setView(user ? 'profile' : 'auth'); setLeftMenu(false); }}>
                         {user ? 'Mój profil' : 'Zaloguj się'}
                     </a>
@@ -425,6 +582,9 @@
                                         <button className="btn-map" onClick={() => setMapItem(item)}>
                                             <i className="fas fa-map-marked-alt"></i> Mapa
                                         </button>
+                                        <button className="btn-heart" onClick={() => toggleFav(item.id)} title={favourites.includes(item.id) ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}>
+                                            {favourites.includes(item.id) ? '❤️' : '🤍'}
+                                        </button>
                                         <button className="btn-reserve" onClick={() => user ? alert('Rezerwacja: ' + item.name) : setView('auth')}>
                                             {user ? 'Zarezerwuj' : 'Zaloguj się'}
                                         </button>
@@ -437,6 +597,7 @@
 
                 {view === 'auth' && <AuthScreen />}
                 {view === 'profile' && (user ? <ProfileScreen user={user} /> : <AuthScreen />)}
+                {view === 'favourites' && <FavouritesScreen user={user} favourites={favourites} onToggleFav={toggleFav} />}
 
                 <nav className="bottom-nav">
                     <div className={`bottom-nav-item ${view==='home'?'active':''}`} onClick={() => setView('home')}>
@@ -444,6 +605,9 @@
                     </div>
                     <div className={`bottom-nav-item ${view==='search'?'active':''}`} onClick={() => setView('search')}>
                         <i className="fas fa-search"></i> Szukaj
+                    </div>
+                    <div className={`bottom-nav-item ${view==='favourites'?'active':''}`} onClick={() => setView('favourites')}>
+                        <i className="fas fa-heart"></i> Ulubione
                     </div>
                     <div className={`bottom-nav-item ${view==='auth'||view==='profile'?'active':''}`} onClick={() => setView(user ? 'profile' : 'auth')}>
                         <i className="fas fa-user"></i> {user ? 'Profil' : 'Konto'}
