@@ -491,18 +491,13 @@
             if (searchQuery.trim().length < 2) return setSearchError('Wpisz min. 2 znaki.');
             setSearching(true);
             try {
-                const q = fb.query(
-                    fb.collection(fb.db, 'users'),
-                    fb.where('name', '>=', searchQuery.trim()),
-                    fb.where('name', '<=', searchQuery.trim() + ''),
-                    fb.limit(10)
-                );
-                const snap = await fb.getDocs(q);
+                const snap = await fb.getDocs(fb.collection(fb.db, 'users'));
+                const term = searchQuery.trim().toLowerCase();
                 const results = snap.docs
                     .map(d => ({ uid: d.id, ...d.data() }))
-                    .filter(u => u.uid !== user.uid);
+                    .filter(u => u.uid !== user.uid && ((u.name||'').toLowerCase().includes(term) || (u.email||'').toLowerCase().includes(term)));
                 setSearchResults(results);
-                if (results.length === 0) setSearchError('Nie znaleziono użytkowników.');
+                if (results.length === 0) setSearchError('Nie znaleziono użytkowników o takiej nazwie.');
             } catch(e) { setSearchError('Błąd wyszukiwania. Spróbuj ponownie.'); }
             setSearching(false);
         };
@@ -547,7 +542,7 @@
                 {subTab === 'search' && (
                     <div>
                         <div className="friends-search-bar">
-                            <input type="text" placeholder="Wpisz imię użytkownika..." value={searchQuery}
+                            <input type="text" placeholder="Imię lub adres e-mail..." value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                                 onKeyDown={e => e.key==='Enter' && handleSearch()} />
                             <button className="btn-search" onClick={handleSearch} disabled={searching}>
