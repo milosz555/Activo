@@ -144,6 +144,41 @@
     .tabs-mini { display: flex; gap: 8px; margin-bottom: 16px; }
     .tab-mini { flex: 1; padding: 8px; text-align: center; border-radius: 8px; font-size: 0.82em; font-weight: 600; cursor: pointer; border: 1.5px solid #e0e0e0; background: white; color: #888; font-family: 'Poppins', sans-serif; }
     .tab-mini.active { background: var(--dark); color: white; border-color: var(--dark); }
+
+    /* ── Panel edycji profilu ───────────────────────────────────────── */
+    .edit-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 4000; display: flex; align-items: flex-end; }
+    .edit-sheet { background: white; width: 100%; border-radius: 20px 20px 0 0; padding: 24px 20px 40px; max-height: 90vh; overflow-y: auto; }
+    .edit-sheet h3 { margin: 0 0 20px; color: var(--dark); font-size: 1.1em; }
+    .edit-sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .edit-sheet-header h3 { margin: 0; }
+
+    /* ── Przełączniki prywatności (toggle switch) ───────────────────── */
+    .privacy-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+    .privacy-row:last-child { border-bottom: none; }
+    .privacy-label { font-size: 0.88em; color: #444; }
+    .privacy-label small { display: block; color: #aaa; font-size: 0.8em; margin-top: 2px; }
+    .toggle-wrap { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle-wrap input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: #ddd; border-radius: 24px; cursor: pointer; transition: 0.3s; }
+    .toggle-slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+    .toggle-wrap input:checked + .toggle-slider { background: var(--primary); }
+    .toggle-wrap input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+    /* ── Rozszerzone wpisy gier ─────────────────────────────────────── */
+    .played-entry-details { font-size: 0.75em; color: #888; margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .played-entry-details span { display: flex; align-items: center; gap: 3px; }
+    .result-badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 0.8em; font-weight: 700; }
+    .result-W { background: #eafaf1; color: #27ae60; }
+    .result-L { background: #fdecea; color: #e74c3c; }
+    .result-D { background: #fef9e7; color: #f39c12; }
+
+    /* ── Zakładki w profilu ─────────────────────────────────────────── */
+    .profile-tabs { display: flex; background: white; border-radius: 12px; overflow: hidden; margin: 0 20px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .profile-tab { flex: 1; padding: 11px 5px; text-align: center; font-size: 0.72em; font-weight: 600; cursor: pointer; color: #999; border: none; background: none; font-family: 'Poppins', sans-serif; }
+    .profile-tab.active { background: var(--dark); color: white; }
+
+    /* ── Przycisk edycji w headerze profilu ─────────────────────────── */
+    .btn-edit-profile { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 14px; border-radius: 20px; font-family: 'Poppins', sans-serif; font-size: 0.78em; font-weight: 600; cursor: pointer; margin-top: 10px; }
 </style>
 ```
 
@@ -321,100 +356,316 @@
         );
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // KOMPONENT: ProfileScreen
+    // Wyświetla profil zalogowanego użytkownika z trzema zakładkami:
+    //   1. "Profil"     – dane konta + ustawienia prywatności
+    //   2. "Historia"   – lista ostatnio rozegranych gier
+    //   3. "Edytuj"     – formularz zmiany imienia
+    // Dane zapisywane są w Firestore w kolekcji "users/{uid}"
+    // ════════════════════════════════════════════════════════════════
     function ProfileScreen({ user }) {
         const fb = window.__firebase;
-        const [playedList, setPlayedList] = useState([]);
+
+        // ── Stan zakładek profilu ────────────────────────────────────────
+        const [profileTab, setProfileTab] = useState('info'); // 'info' | 'history' | 'edit'
+
+        // ── Stan historii gier ───────────────────────────────────────────
+        const [playedList, setPlayedList]     = useState([]);
         const [showAddPlayed, setShowAddPlayed] = useState(false);
         const [selectedCourt, setSelectedCourt] = useState(DATA[0].name);
-        const [playedDate, setPlayedDate] = useState(new Date().toISOString().split('T')[0]);
-        const [saving, setSaving] = useState(false);
+        const [playedDate, setPlayedDate]     = useState(new Date().toISOString().split('T')[0]);
+        // Opcjonalne pola przy dodawaniu gry
+        const [playedOpponent, setPlayedOpponent] = useState('');  // z kim grał
+        const [playedScore, setPlayedScore]       = useState('');  // wynik np. 6:3
+        const [playedResult, setPlayedResult]     = useState('');  // W / L / D
+        const [saving, setSaving]             = useState(false);
 
+        // ── Stan edycji imienia ──────────────────────────────────────────
+        const [editName, setEditName]     = useState(user.displayName || '');
+        const [editSaving, setEditSaving] = useState(false);
+        const [editMsg, setEditMsg]       = useState('');
+
+        // ── Stan ustawień prywatności ────────────────────────────────────
+        // showFavourites – czy znajomi widzą ulubione obiekty
+        // showHistory    – czy znajomi widzą historię gier
+        const [showFavourites, setShowFavourites] = useState(true);
+        const [showHistory, setShowHistory]       = useState(true);
+
+        // Referencja do dokumentu użytkownika w Firestore
         const userDocRef = fb.doc(fb.db, 'users', user.uid);
 
+        // ── Załaduj dane użytkownika z Firestore przy montowaniu ─────────
         useEffect(() => {
             fb.getDoc(userDocRef).then(snap => {
                 if (snap.exists()) {
                     const data = snap.data();
                     setPlayedList(data.playedHistory || []);
+                    // Ustawienia prywatności – domyślnie true jeśli nie ustawione
+                    if (data.privacy) {
+                        setShowFavourites(data.privacy.showFavourites !== false);
+                        setShowHistory(data.privacy.showHistory !== false);
+                    }
                 }
             });
         }, [user.uid]);
 
+        // ── Wylogowanie ──────────────────────────────────────────────────
         const handleLogout = async () => { await fb.signOut(fb.auth); };
 
+        // ── Zapis nowej gry do historii ──────────────────────────────────
+        // Tworzy obiekt wpisu z obowiązkowymi polami (kort, data)
+        // i opcjonalnymi (przeciwnik, wynik, rezultat)
         const addPlayedEntry = async () => {
             setSaving(true);
-            const entry = { court: selectedCourt, date: playedDate, addedAt: new Date().toISOString() };
-            const newList = [entry, ...playedList].slice(0, 20);
+            const entry = {
+                court: selectedCourt,
+                date: playedDate,
+                addedAt: new Date().toISOString(),
+                // Opcjonalne – dodawane tylko jeśli wypełnione
+                ...(playedOpponent.trim() && { opponent: playedOpponent.trim() }),
+                ...(playedScore.trim()    && { score: playedScore.trim() }),
+                ...(playedResult          && { result: playedResult }),
+            };
+            const newList = [entry, ...playedList].slice(0, 30); // max 30 wpisów
             await fb.setDoc(userDocRef, { playedHistory: newList }, { merge: true });
             setPlayedList(newList);
+            // Reset formularza
             setShowAddPlayed(false);
+            setPlayedOpponent('');
+            setPlayedScore('');
+            setPlayedResult('');
             setSaving(false);
         };
 
+        // ── Usunięcie wpisu z historii gier ─────────────────────────────
         const removePlayedEntry = async (idx) => {
             const newList = playedList.filter((_, i) => i !== idx);
             await fb.setDoc(userDocRef, { playedHistory: newList }, { merge: true });
             setPlayedList(newList);
         };
 
+        // ── Zapis zmienionego imienia ────────────────────────────────────
+        // Aktualizuje zarówno Firebase Auth (displayName) jak i Firestore
+        const saveEditName = async () => {
+            if (!editName.trim()) return setEditMsg('Imię nie może być puste.');
+            setEditSaving(true);
+            try {
+                await fb.updateProfile(fb.auth.currentUser, { displayName: editName.trim() });
+                await fb.setDoc(userDocRef, { name: editName.trim() }, { merge: true });
+                setEditMsg('✅ Imię zostało zaktualizowane!');
+            } catch(e) { setEditMsg('Błąd zapisu. Spróbuj ponownie.'); }
+            setEditSaving(false);
+        };
+
+        // ── Zapis ustawień prywatności ───────────────────────────────────
+        // Zapisuje obiekt "privacy" do dokumentu użytkownika w Firestore
+        // FriendsScreen czyta te flagi przed wyświetleniem danych znajomego
+        const savePrivacy = async (key, value) => {
+            const update = { privacy: { showFavourites, showHistory, [key]: value } };
+            await fb.setDoc(userDocRef, update, { merge: true });
+        };
+
+        const handlePrivacyToggle = (key, value) => {
+            if (key === 'showFavourites') setShowFavourites(value);
+            if (key === 'showHistory')    setShowHistory(value);
+            savePrivacy(key, value);
+        };
+
+        // ── Dane pomocnicze ──────────────────────────────────────────────
         const initials = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
-        const joinDate = user.metadata?.creationTime
+        const joinDate  = user.metadata?.creationTime
             ? new Date(user.metadata.creationTime).toLocaleDateString('pl-PL', { year: 'numeric', month: 'long' })
             : '—';
 
+        // Etykieta rezultatu gry (W/L/D)
+        const resultLabel = { W: 'Wygrana', L: 'Przegrana', D: 'Remis' };
+
         return (
             <div>
+                {/* ── Nagłówek profilu ── */}
                 <div className="profile-header">
                     <div className="profile-avatar-big">{initials}</div>
                     <div className="profile-name">{user.displayName || 'Użytkownik'}</div>
                     <div className="profile-email">{user.email}</div>
+                    <button className="btn-edit-profile" onClick={() => setProfileTab('edit')}>
+                        <i className="fas fa-pen"></i> Edytuj profil
+                    </button>
                 </div>
-                <div className="profile-body">
-                    <div className="profile-card">
-                        <h4><i className="fas fa-user" style={{color:'var(--primary)',marginRight:6}}></i> Dane konta</h4>
-                        <div className="profile-row"><span>Imię</span><span>{user.displayName || '—'}</span></div>
-                        <div className="profile-row"><span>E-mail</span><span>{user.email}</span></div>
-                        <div className="profile-row"><span>Konto od</span><span>{joinDate}</span></div>
-                        <div className="profile-row"><span>Status</span><span style={{color:'var(--primary)'}}>✔ Aktywny</span></div>
-                    </div>
 
-                    <div className="profile-card">
-                        <h4 style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                            <span><i className="fas fa-history" style={{color:'var(--primary)',marginRight:6}}></i> Ostatnio grałem</span>
-                            <button className="btn-add-small" style={{width:'auto',padding:'5px 12px'}} onClick={() => setShowAddPlayed(!showAddPlayed)}>
-                                <i className="fas fa-plus"></i> Dodaj
-                            </button>
-                        </h4>
-                        {showAddPlayed && (
-                            <div className="add-played-form">
-                                <label style={{fontSize:'0.8em',fontWeight:600,color:'#555',display:'block',marginBottom:4}}>Obiekt</label>
-                                <select value={selectedCourt} onChange={e => setSelectedCourt(e.target.value)}>
-                                    {DATA.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
-                                </select>
-                                <label style={{fontSize:'0.8em',fontWeight:600,color:'#555',display:'block',marginBottom:4}}>Data</label>
-                                <input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} />
-                                <button className="btn-add-small" onClick={addPlayedEntry} disabled={saving}>
-                                    {saving ? 'Zapisywanie...' : 'Zapisz'}
-                                </button>
-                            </div>
-                        )}
-                        {playedList.length === 0 && !showAddPlayed
-                            ? <div className="section-empty">Brak wpisów — dodaj gdzie ostatnio grałeś!</div>
-                            : playedList.map((entry, idx) => (
-                                <div key={idx} className="played-entry">
-                                    <div className="played-entry-left">
-                                        <strong>🎾 {entry.court}</strong>
-                                        <span>{new Date(entry.date).toLocaleDateString('pl-PL', {day:'numeric',month:'long',year:'numeric'})}</span>
-                                    </div>
-                                    <div className="played-entry-right" onClick={() => removePlayedEntry(idx)}>
-                                        <i className="fas fa-times"></i>
-                                    </div>
+                {/* ── Zakładki profilu ── */}
+                <div className="profile-tabs">
+                    <button className={`profile-tab ${profileTab==='info'?'active':''}`} onClick={() => setProfileTab('info')}>
+                        <i className="fas fa-user"></i> Profil
+                    </button>
+                    <button className={`profile-tab ${profileTab==='history'?'active':''}`} onClick={() => setProfileTab('history')}>
+                        <i className="fas fa-history"></i> Historia
+                    </button>
+                    <button className={`profile-tab ${profileTab==='edit'?'active':''}`} onClick={() => setProfileTab('edit')}>
+                        <i className="fas fa-cog"></i> Ustawienia
+                    </button>
+                </div>
+
+                <div className="profile-body" style={{marginTop:0}}>
+
+                    {/* ════════════════════════════════════════════════
+                        ZAKŁADKA 1: PROFIL – dane konta + prywatność
+                    ════════════════════════════════════════════════ */}
+                    {profileTab === 'info' && (<>
+                        <div className="profile-card">
+                            <h4><i className="fas fa-user" style={{color:'var(--primary)',marginRight:6}}></i> Dane konta</h4>
+                            <div className="profile-row"><span>Imię</span><span>{user.displayName || '—'}</span></div>
+                            <div className="profile-row"><span>E-mail</span><span>{user.email}</span></div>
+                            <div className="profile-row"><span>Konto od</span><span>{joinDate}</span></div>
+                            <div className="profile-row"><span>Gier w historii</span><span>{playedList.length}</span></div>
+                            <div className="profile-row"><span>Status</span><span style={{color:'var(--primary)'}}>✔ Aktywny</span></div>
+                        </div>
+
+                        {/* Ustawienia widoczności dla znajomych */}
+                        <div className="profile-card">
+                            <h4><i className="fas fa-shield-alt" style={{color:'var(--primary)',marginRight:6}}></i> Prywatność</h4>
+                            <p style={{fontSize:'0.8em',color:'#aaa',margin:'0 0 10px'}}>Wybierz co widzą Twoi znajomi na Twoim profilu</p>
+
+                            <div className="privacy-row">
+                                <div className="privacy-label">
+                                    Ulubione obiekty
+                                    <small>Znajomi widzą Twoje polubione korty</small>
                                 </div>
-                            ))
-                        }
-                    </div>
+                                <label className="toggle-wrap">
+                                    <input type="checkbox" checked={showFavourites}
+                                        onChange={e => handlePrivacyToggle('showFavourites', e.target.checked)} />
+                                    <span className="toggle-slider"></span>
+                                </label>
+                            </div>
 
+                            <div className="privacy-row">
+                                <div className="privacy-label">
+                                    Historia gier
+                                    <small>Znajomi widzą gdzie ostatnio grałeś</small>
+                                </div>
+                                <label className="toggle-wrap">
+                                    <input type="checkbox" checked={showHistory}
+                                        onChange={e => handlePrivacyToggle('showHistory', e.target.checked)} />
+                                    <span className="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </>)}
+
+                    {/* ════════════════════════════════════════════════
+                        ZAKŁADKA 2: HISTORIA – lista rozegranych gier
+                        Każdy wpis zawiera: kort, datę i opcjonalnie
+                        przeciwnika, wynik i rezultat (W/L/D)
+                    ════════════════════════════════════════════════ */}
+                    {profileTab === 'history' && (
+                        <div className="profile-card">
+                            <h4 style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                                <span><i className="fas fa-history" style={{color:'var(--primary)',marginRight:6}}></i> Ostatnio grałem</span>
+                                <button className="btn-add-small" style={{width:'auto',padding:'5px 12px'}} onClick={() => setShowAddPlayed(!showAddPlayed)}>
+                                    <i className="fas fa-plus"></i> Dodaj
+                                </button>
+                            </h4>
+
+                            {/* Formularz dodawania nowej gry */}
+                            {showAddPlayed && (
+                                <div className="add-played-form">
+                                    {/* Pole wymagane: obiekt */}
+                                    <label style={{fontSize:'0.8em',fontWeight:600,color:'#555',display:'block',marginBottom:4}}>Obiekt *</label>
+                                    <select value={selectedCourt} onChange={e => setSelectedCourt(e.target.value)}>
+                                        {DATA.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                                    </select>
+
+                                    {/* Pole wymagane: data */}
+                                    <label style={{fontSize:'0.8em',fontWeight:600,color:'#555',display:'block',marginBottom:4}}>Data *</label>
+                                    <input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} />
+
+                                    {/* Pole opcjonalne: przeciwnik */}
+                                    <label style={{fontSize:'0.8em',fontWeight:600,color:'#aaa',display:'block',marginBottom:4}}>
+                                        Z kim grałem? <span style={{fontWeight:400}}>(opcjonalnie)</span>
+                                    </label>
+                                    <input type="text" placeholder="np. Kamil" value={playedOpponent} onChange={e => setPlayedOpponent(e.target.value)} />
+
+                                    {/* Pole opcjonalne: wynik */}
+                                    <label style={{fontSize:'0.8em',fontWeight:600,color:'#aaa',display:'block',marginBottom:4}}>
+                                        Wynik <span style={{fontWeight:400}}>(opcjonalnie, np. 6:3)</span>
+                                    </label>
+                                    <input type="text" placeholder="np. 6:3" value={playedScore} onChange={e => setPlayedScore(e.target.value)} />
+
+                                    {/* Pole opcjonalne: rezultat */}
+                                    <label style={{fontSize:'0.8em',fontWeight:600,color:'#aaa',display:'block',marginBottom:4}}>
+                                        Rezultat <span style={{fontWeight:400}}>(opcjonalnie)</span>
+                                    </label>
+                                    <select value={playedResult} onChange={e => setPlayedResult(e.target.value)}>
+                                        <option value="">— nie podawaj —</option>
+                                        <option value="W">🏆 Wygrana</option>
+                                        <option value="L">❌ Przegrana</option>
+                                        <option value="D">🤝 Remis</option>
+                                    </select>
+
+                                    <button className="btn-add-small" onClick={addPlayedEntry} disabled={saving}>
+                                        {saving ? 'Zapisywanie...' : '✔ Zapisz grę'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Lista wpisów */}
+                            {playedList.length === 0 && !showAddPlayed
+                                ? <div className="section-empty">Brak wpisów — dodaj gdzie ostatnio grałeś!</div>
+                                : playedList.map((entry, idx) => (
+                                    <div key={idx} className="played-entry">
+                                        <div className="played-entry-left">
+                                            <strong>
+                                                🎾 {entry.court}
+                                                {/* Badge rezultatu jeśli podany */}
+                                                {entry.result && <span className={`result-badge result-${entry.result}`} style={{marginLeft:6}}>
+                                                    {resultLabel[entry.result]}
+                                                </span>}
+                                            </strong>
+                                            <span>{new Date(entry.date).toLocaleDateString('pl-PL', {day:'numeric',month:'long',year:'numeric'})}</span>
+                                            {/* Szczegóły opcjonalne */}
+                                            <div className="played-entry-details">
+                                                {entry.opponent && <span><i className="fas fa-user"></i> {entry.opponent}</span>}
+                                                {entry.score    && <span><i className="fas fa-table-tennis"></i> {entry.score}</span>}
+                                            </div>
+                                        </div>
+                                        <div className="played-entry-right" onClick={() => removePlayedEntry(idx)} title="Usuń wpis">
+                                            <i className="fas fa-times"></i>
+                                        </div>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    )}
+
+                    {/* ════════════════════════════════════════════════
+                        ZAKŁADKA 3: USTAWIENIA – edycja imienia
+                    ════════════════════════════════════════════════ */}
+                    {profileTab === 'edit' && (
+                        <div className="profile-card">
+                            <h4><i className="fas fa-pen" style={{color:'var(--primary)',marginRight:6}}></i> Edytuj profil</h4>
+
+                            <div className="form-group">
+                                <label style={{fontSize:'0.82em',fontWeight:600,color:'#555',display:'block',marginBottom:6}}>Imię wyświetlane</label>
+                                <input type="text" value={editName} onChange={e => setEditName(e.target.value)}
+                                    placeholder="Twoje imię" />
+                            </div>
+
+                            <div className="form-group">
+                                <label style={{fontSize:'0.82em',fontWeight:600,color:'#555',display:'block',marginBottom:6}}>Adres e-mail</label>
+                                <input type="email" value={user.email} disabled
+                                    style={{background:'#f5f5f5',color:'#aaa',cursor:'not-allowed'}} />
+                                <small style={{color:'#bbb',fontSize:'0.75em'}}>E-mail nie może być zmieniony</small>
+                            </div>
+
+                            {editMsg && <div className={editMsg.startsWith('✅') ? 'auth-success' : 'auth-error'} style={{marginBottom:10}}>{editMsg}</div>}
+
+                            <button className="btn-apply" style={{marginTop:0}} onClick={saveEditName} disabled={editSaving}>
+                                {editSaving ? 'Zapisywanie...' : 'Zapisz zmiany'}
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Przycisk wylogowania zawsze widoczny na dole */}
                     <button className="btn-logout" onClick={handleLogout}>
                         <i className="fas fa-sign-out-alt"></i> Wyloguj się
                     </button>
@@ -423,7 +674,7 @@
         );
     }
 
-    function FavouritesScreen({ user, favourites, onToggleFav }) {
+        function FavouritesScreen({ user, favourites, onToggleFav }) {
         const favItems = DATA.filter(item => favourites.includes(item.id));
         if (!user) {
             return (
@@ -577,8 +828,11 @@
                             </div>
                         )}
                         {friendsData.map(friend => {
-                            const favItems = DATA.filter(d => (friend.favourites||[]).includes(d.id));
-                            const played = (friend.playedHistory||[]).slice(0,3);
+                            // Sprawdź flagi prywatności znajomego zanim pokażesz dane
+                            const canSeeFav     = friend.privacy?.showFavourites !== false;
+                            const canSeeHistory = friend.privacy?.showHistory !== false;
+                            const favItems = canSeeFav ? DATA.filter(d => (friend.favourites||[]).includes(d.id)) : [];
+                            const played   = canSeeHistory ? (friend.playedHistory||[]).slice(0,3) : [];
                             return (
                                 <div key={friend.uid} className="friend-card">
                                     <div className="friend-card-header">
