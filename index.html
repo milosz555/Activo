@@ -121,6 +121,29 @@
     .lock-banner { background: #fff8e1; border: 1px solid #ffe082; border-radius: 12px; padding: 20px; text-align: center; margin: 20px; }
     .lock-banner i { font-size: 2em; color: #f9a825; margin-bottom: 10px; display: block; }
     .lock-banner p { margin: 0 0 12px; color: #555; font-size: 0.9em; }
+
+    /* Znajomi */
+    .friends-search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+    .friends-search-bar input { flex: 1; margin-bottom: 0; }
+    .btn-search { background: var(--dark); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-family: 'Poppins', sans-serif; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .friend-card { background: white; border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 12px; }
+    .friend-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .friend-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--dark); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1em; flex-shrink: 0; }
+    .friend-info { flex: 1; }
+    .friend-info h5 { margin: 0 0 2px; color: var(--dark); font-size: 0.95em; }
+    .friend-info span { font-size: 0.75em; color: #aaa; }
+    .btn-add-friend { background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 20px; font-family: 'Poppins', sans-serif; font-size: 0.78em; font-weight: 700; cursor: pointer; }
+    .btn-remove-friend { background: #f0f0f0; color: #888; border: none; padding: 6px 14px; border-radius: 20px; font-family: 'Poppins', sans-serif; font-size: 0.78em; font-weight: 700; cursor: pointer; }
+    .friend-fav-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .friend-fav-tag { background: #e8f4fd; color: var(--dark); font-size: 0.72em; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+    .friend-played-list { margin-top: 6px; }
+    .friend-played-item { font-size: 0.78em; color: #666; padding: 3px 0; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; }
+    .friend-played-item:last-child { border-bottom: none; }
+    .friend-section-title { font-size: 0.75em; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; margin: 10px 0 4px; }
+    .search-result-card { background: #f0f7ff; border: 1.5px solid #c5ddf7; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+    .tabs-mini { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab-mini { flex: 1; padding: 8px; text-align: center; border-radius: 8px; font-size: 0.82em; font-weight: 600; cursor: pointer; border: 1.5px solid #e0e0e0; background: white; color: #888; font-family: 'Poppins', sans-serif; }
+    .tab-mini.active { background: var(--dark); color: white; border-color: var(--dark); }
 </style>
 ```
 
@@ -133,7 +156,7 @@
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
              signOut, onAuthStateChanged, updateProfile }
         from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp }
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, query, where, getDocs, orderBy, limit }
         from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -152,7 +175,7 @@
 
     window.__firebase = { auth, db, createUserWithEmailAndPassword,
         signInWithEmailAndPassword, signOut, onAuthStateChanged,
-        updateProfile, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp };
+        updateProfile, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, query, where, getDocs, orderBy, limit };
 </script>
 
 <script type="text/babel">
@@ -435,6 +458,175 @@
         );
     }
 
+
+    function FriendsScreen({ user }) {
+        const fb = window.__firebase;
+        const [subTab, setSubTab] = useState('friends'); // 'friends' | 'search'
+        const [searchQuery, setSearchQuery] = useState('');
+        const [searchResults, setSearchResults] = useState([]);
+        const [searching, setSearching] = useState(false);
+        const [searchError, setSearchError] = useState('');
+        const [friends, setFriends] = useState([]);
+        const [friendsData, setFriendsData] = useState([]);
+        const [loadingFriends, setLoadingFriends] = useState(true);
+
+        // Załaduj listę znajomych
+        useEffect(() => {
+            if (!user) return;
+            fb.getDoc(fb.doc(fb.db, 'users', user.uid)).then(snap => {
+                const friendUids = snap.exists() ? (snap.data().friends || []) : [];
+                setFriends(friendUids);
+                if (friendUids.length === 0) { setLoadingFriends(false); return; }
+                // Załaduj dane każdego znajomego
+                Promise.all(friendUids.map(uid => fb.getDoc(fb.doc(fb.db, 'users', uid))))
+                    .then(snaps => {
+                        setFriendsData(snaps.filter(s => s.exists()).map(s => ({ uid: s.id, ...s.data() })));
+                        setLoadingFriends(false);
+                    });
+            });
+        }, [user?.uid]);
+
+        const handleSearch = async () => {
+            setSearchError('');
+            if (searchQuery.trim().length < 2) return setSearchError('Wpisz min. 2 znaki.');
+            setSearching(true);
+            try {
+                const q = fb.query(
+                    fb.collection(fb.db, 'users'),
+                    fb.where('name', '>=', searchQuery.trim()),
+                    fb.where('name', '<=', searchQuery.trim() + ''),
+                    fb.limit(10)
+                );
+                const snap = await fb.getDocs(q);
+                const results = snap.docs
+                    .map(d => ({ uid: d.id, ...d.data() }))
+                    .filter(u => u.uid !== user.uid);
+                setSearchResults(results);
+                if (results.length === 0) setSearchError('Nie znaleziono użytkowników.');
+            } catch(e) { setSearchError('Błąd wyszukiwania. Spróbuj ponownie.'); }
+            setSearching(false);
+        };
+
+        const addFriend = async (friendUid) => {
+            const newFriends = [...friends, friendUid];
+            setFriends(newFriends);
+            await fb.setDoc(fb.doc(fb.db, 'users', user.uid), { friends: newFriends }, { merge: true });
+            // Załaduj dane nowego znajomego
+            const snap = await fb.getDoc(fb.doc(fb.db, 'users', friendUid));
+            if (snap.exists()) setFriendsData(prev => [...prev, { uid: snap.id, ...snap.data() }]);
+        };
+
+        const removeFriend = async (friendUid) => {
+            const newFriends = friends.filter(id => id !== friendUid);
+            setFriends(newFriends);
+            setFriendsData(prev => prev.filter(f => f.uid !== friendUid));
+            await fb.setDoc(fb.doc(fb.db, 'users', user.uid), { friends: newFriends }, { merge: true });
+        };
+
+        if (!user) {
+            return (
+                <div className="lock-banner" style={{marginTop:20}}>
+                    <i className="fas fa-lock"></i>
+                    <p>Ta sekcja jest dostępna tylko dla zalogowanych użytkowników.</p>
+                    <button className="btn-apply" style={{marginTop:0}} onClick={() => window.__setView('auth')}>Zaloguj się</button>
+                </div>
+            );
+        }
+
+        return (
+            <div className="container">
+                <div className="tabs-mini">
+                    <button className={`tab-mini ${subTab==='friends'?'active':''}`} onClick={() => setSubTab('friends')}>
+                        <i className="fas fa-user-friends"></i> Znajomi ({friends.length})
+                    </button>
+                    <button className={`tab-mini ${subTab==='search'?'active':''}`} onClick={() => setSubTab('search')}>
+                        <i className="fas fa-search"></i> Szukaj
+                    </button>
+                </div>
+
+                {subTab === 'search' && (
+                    <div>
+                        <div className="friends-search-bar">
+                            <input type="text" placeholder="Wpisz imię użytkownika..." value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                onKeyDown={e => e.key==='Enter' && handleSearch()} />
+                            <button className="btn-search" onClick={handleSearch} disabled={searching}>
+                                {searching ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-search"></i>}
+                            </button>
+                        </div>
+                        {searchError && <div style={{color:'#888',fontSize:'0.85em',textAlign:'center',marginBottom:12}}>{searchError}</div>}
+                        {searchResults.map(result => (
+                            <div key={result.uid} className="search-result-card">
+                                <div className="friend-card-header">
+                                    <div className="friend-avatar">{(result.name||'?').charAt(0).toUpperCase()}</div>
+                                    <div className="friend-info">
+                                        <h5>{result.name}</h5>
+                                        <span>{(result.favourites||[]).length} ulubionych obiektów</span>
+                                    </div>
+                                    {friends.includes(result.uid)
+                                        ? <button className="btn-remove-friend" onClick={() => removeFriend(result.uid)}>✔ Dodano</button>
+                                        : <button className="btn-add-friend" onClick={() => addFriend(result.uid)}>+ Dodaj</button>
+                                    }
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {subTab === 'friends' && (
+                    <div>
+                        {loadingFriends && <div className="section-empty">Ładowanie...</div>}
+                        {!loadingFriends && friendsData.length === 0 && (
+                            <div className="section-empty">
+                                Brak znajomych — przejdź do zakładki "Szukaj" i dodaj kogoś!
+                            </div>
+                        )}
+                        {friendsData.map(friend => {
+                            const favItems = DATA.filter(d => (friend.favourites||[]).includes(d.id));
+                            const played = (friend.playedHistory||[]).slice(0,3);
+                            return (
+                                <div key={friend.uid} className="friend-card">
+                                    <div className="friend-card-header">
+                                        <div className="friend-avatar">{(friend.name||'?').charAt(0).toUpperCase()}</div>
+                                        <div className="friend-info">
+                                            <h5>{friend.name}</h5>
+                                            <span>{favItems.length} ulubionych · {(friend.playedHistory||[]).length} gier</span>
+                                        </div>
+                                        <button className="btn-remove-friend" onClick={() => removeFriend(friend.uid)}>Usuń</button>
+                                    </div>
+                                    {favItems.length > 0 && (
+                                        <>
+                                            <div className="friend-section-title"><i className="fas fa-heart" style={{color:'#e74c3c',marginRight:4}}></i> Ulubione obiekty</div>
+                                            <div className="friend-fav-list">
+                                                {favItems.map(item => <span key={item.id} className="friend-fav-tag">🎾 {item.name}</span>)}
+                                            </div>
+                                        </>
+                                    )}
+                                    {played.length > 0 && (
+                                        <>
+                                            <div className="friend-section-title"><i className="fas fa-history" style={{marginRight:4}}></i> Ostatnio grał</div>
+                                            <div className="friend-played-list">
+                                                {played.map((p,i) => (
+                                                    <div key={i} className="friend-played-item">
+                                                        <span>🎾 {p.court}</span>
+                                                        <span>{new Date(p.date).toLocaleDateString('pl-PL',{day:'numeric',month:'short'})}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+                                    {favItems.length === 0 && played.length === 0 && (
+                                        <div style={{fontSize:'0.8em',color:'#bbb',textAlign:'center',padding:'6px 0'}}>Brak aktywności</div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     function App() {
         const [view, setView] = useState('home');
         const [leftMenu, setLeftMenu] = useState(false);
@@ -501,6 +693,10 @@
                         <i className="fas fa-heart" style={{marginRight:8,color:'#e74c3c'}}></i>
                         Ulubione {user && favourites.length > 0 && <span style={{background:'#e74c3c',color:'white',borderRadius:'20px',padding:'1px 7px',fontSize:'0.75em',marginLeft:4}}>{favourites.length}</span>}
                     </a>
+                    {user && <a href="#" style={{color:'white',display:'block',padding:'15px 0'}} onClick={() => { setView('friends'); setLeftMenu(false); }}>
+                        <i className="fas fa-user-friends" style={{marginRight:8,color:'#3498db'}}></i>
+                        Znajomi
+                    </a>}
                     <a href="#" style={{color:'white',display:'block',padding:'15px 0'}} onClick={() => { setView(user ? 'profile' : 'auth'); setLeftMenu(false); }}>
                         {user ? 'Mój profil' : 'Zaloguj się'}
                     </a>
@@ -598,6 +794,7 @@
                 {view === 'auth' && <AuthScreen />}
                 {view === 'profile' && (user ? <ProfileScreen user={user} /> : <AuthScreen />)}
                 {view === 'favourites' && <FavouritesScreen user={user} favourites={favourites} onToggleFav={toggleFav} />}
+                {view === 'friends' && <FriendsScreen user={user} />}
 
                 <nav className="bottom-nav">
                     <div className={`bottom-nav-item ${view==='home'?'active':''}`} onClick={() => setView('home')}>
@@ -609,6 +806,9 @@
                     <div className={`bottom-nav-item ${view==='favourites'?'active':''}`} onClick={() => setView('favourites')}>
                         <i className="fas fa-heart"></i> Ulubione
                     </div>
+                    {user && <div className={`bottom-nav-item ${view==='friends'?'active':''}`} onClick={() => setView('friends')}>
+                        <i className="fas fa-user-friends"></i> Znajomi
+                    </div>}
                     <div className={`bottom-nav-item ${view==='auth'||view==='profile'?'active':''}`} onClick={() => setView(user ? 'profile' : 'auth')}>
                         <i className="fas fa-user"></i> {user ? 'Profil' : 'Konto'}
                     </div>
