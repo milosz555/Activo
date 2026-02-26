@@ -17,11 +17,9 @@
 <style>
     :root { --primary: #2ecc71; --dark: #0b3d91; --bg: #f4f6f9; --white: #ffffff; --danger: #e74c3c; }
     * { box-sizing: border-box; }
-    body { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; background: var(--bg); overflow-x: hidden; }
-    html { margin: 0; padding: 0; }
+    body { font-family: 'Poppins', sans-serif; margin: 0; background: var(--bg); overflow-x: hidden; }
 
     .top-nav { background: var(--dark); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
-    * { -webkit-tap-highlight-color: transparent; }
     .top-nav i { font-size: 1.1em; cursor: pointer; }
     .nav-user { display: flex; align-items: center; gap: 12px; }
     .nav-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85em; cursor: pointer; }
@@ -181,39 +179,6 @@
 
     /* ── Przycisk edycji w headerze profilu ─────────────────────────── */
     .btn-edit-profile { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 14px; border-radius: 20px; font-family: 'Poppins', sans-serif; font-size: 0.78em; font-weight: 600; cursor: pointer; margin-top: 10px; }
-
-    /* ── Zaproszenia do znajomych ──────────────────────────────── */
-    .invite-badge { background: #e74c3c; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.7em; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; margin-left: 6px; }
-    .invite-card { background: #fff8e1; border: 1px solid #ffe082; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
-    .invite-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-    .invite-actions { display: flex; gap: 8px; }
-    .btn-accept { background: var(--primary); color: white; border: none; padding: 7px 16px; border-radius: 20px; font-family: 'Poppins', sans-serif; font-size: 0.8em; font-weight: 700; cursor: pointer; flex: 1; }
-    .btn-decline { background: #f0f0f0; color: #888; border: none; padding: 7px 16px; border-radius: 20px; font-family: 'Poppins', sans-serif; font-size: 0.8em; font-weight: 700; cursor: pointer; flex: 1; }
-    .btn-pending { background: #f0f0f0; color: #aaa; border: none; padding: 6px 14px; border-radius: 20px; font-family: 'Poppins', sans-serif; font-size: 0.78em; font-weight: 700; cursor: default; }
-
-    /* ── Poziom i sporty ─────────────────────────────────────────── */
-    .sport-tag { display: inline-flex; align-items: center; gap: 4px; background: #e8f4fd; color: var(--dark); font-size: 0.75em; font-weight: 600; padding: 4px 10px; border-radius: 20px; margin: 3px; }
-    .sport-tag .remove-sport { cursor: pointer; color: #aaa; margin-left: 2px; font-size: 0.9em; }
-    .sport-tags-wrap { display: flex; flex-wrap: wrap; margin: 8px 0; }
-    .level-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.75em; font-weight: 700; }
-    .level-P { background: #eafaf1; color: #27ae60; }
-    .level-S { background: #e8f4fd; color: #2980b9; }
-    .level-Z { background: #fff8e1; color: #f39c12; }
-    .level-A { background: #fdecea; color: #e74c3c; }
-
-    /* ── Profil znajomego (modal) ─────────────────────────────── */
-    .friend-profile-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 4000; display: flex; align-items: flex-end; }
-    .friend-profile-sheet { background: var(--bg); width: 100%; border-radius: 20px 20px 0 0; max-height: 90vh; overflow-y: auto; }
-    .friend-profile-header { background: var(--dark); color: white; padding: 24px 20px 40px; text-align: center; position: relative; border-radius: 20px 20px 0 0; }
-    .friend-profile-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; font-size: 1em; cursor: pointer; }
-    .friend-profile-body { padding: 0 16px 30px; margin-top: -24px; }
-    .fp-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 14px; }
-    .fp-card h4 { margin: 0 0 12px; color: var(--dark); font-size: 0.9em; }
-    .fp-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 0.83em; }
-    .fp-row:last-child { border-bottom: none; }
-    .fp-row span:first-child { color: #888; }
-    .fp-row span:last-child { font-weight: 600; }
-    .hidden-info { color: #ccc; font-size: 0.8em; font-style: italic; }
 </style>
 ```
 
@@ -424,17 +389,8 @@
         // ── Stan ustawień prywatności ────────────────────────────────────
         // showFavourites – czy znajomi widzą ulubione obiekty
         // showHistory    – czy znajomi widzą historię gier
-        // showSports     – czy znajomi widzą sporty i poziom
         const [showFavourites, setShowFavourites] = useState(true);
         const [showHistory, setShowHistory]       = useState(true);
-        const [showSports, setShowSports]         = useState(true);
-
-        // ── Stan sportów i poziomu ───────────────────────────────────────
-        // sports – lista { name, level } dodanych przez użytkownika
-        const [sports, setSports]         = useState([]);
-        const [newSportName, setNewSportName] = useState('');
-        const [newSportLevel, setNewSportLevel] = useState('P');
-        const [sportSaving, setSportSaving]   = useState(false);
 
         // Referencja do dokumentu użytkownika w Firestore
         const userDocRef = fb.doc(fb.db, 'users', user.uid);
@@ -445,12 +401,10 @@
                 if (snap.exists()) {
                     const data = snap.data();
                     setPlayedList(data.playedHistory || []);
-                    setSports(data.sports || []);
                     // Ustawienia prywatności – domyślnie true jeśli nie ustawione
                     if (data.privacy) {
                         setShowFavourites(data.privacy.showFavourites !== false);
                         setShowHistory(data.privacy.showHistory !== false);
-                        setShowSports(data.privacy.showSports !== false);
                     }
                 }
             });
@@ -508,35 +462,14 @@
         // Zapisuje obiekt "privacy" do dokumentu użytkownika w Firestore
         // FriendsScreen czyta te flagi przed wyświetleniem danych znajomego
         const savePrivacy = async (key, value) => {
-            const update = { privacy: { showFavourites, showHistory, showSports, [key]: value } };
+            const update = { privacy: { showFavourites, showHistory, [key]: value } };
             await fb.setDoc(userDocRef, update, { merge: true });
         };
 
         const handlePrivacyToggle = (key, value) => {
             if (key === 'showFavourites') setShowFavourites(value);
             if (key === 'showHistory')    setShowHistory(value);
-            if (key === 'showSports')     setShowSports(value);
             savePrivacy(key, value);
-        };
-
-        // ── Dodaj sport do listy ─────────────────────────────────────────
-        const addSport = async () => {
-            if (!newSportName.trim()) return;
-            setSportSaving(true);
-            const entry = { name: newSportName.trim(), level: newSportLevel };
-            const newSports = [...sports, entry];
-            setSports(newSports);
-            await fb.setDoc(userDocRef, { sports: newSports }, { merge: true });
-            setNewSportName('');
-            setNewSportLevel('P');
-            setSportSaving(false);
-        };
-
-        // ── Usuń sport z listy ───────────────────────────────────────────
-        const removeSport = async (idx) => {
-            const newSports = sports.filter((_, i) => i !== idx);
-            setSports(newSports);
-            await fb.setDoc(userDocRef, { sports: newSports }, { merge: true });
         };
 
         // ── Dane pomocnicze ──────────────────────────────────────────────
@@ -613,18 +546,6 @@
                                 <label className="toggle-wrap">
                                     <input type="checkbox" checked={showHistory}
                                         onChange={e => handlePrivacyToggle('showHistory', e.target.checked)} />
-                                    <span className="toggle-slider"></span>
-                                </label>
-                            </div>
-
-                            <div className="privacy-row">
-                                <div className="privacy-label">
-                                    Sporty i poziom
-                                    <small>Znajomi widzą Twoje sporty i zaawansowanie</small>
-                                </div>
-                                <label className="toggle-wrap">
-                                    <input type="checkbox" checked={showSports}
-                                        onChange={e => handlePrivacyToggle('showSports', e.target.checked)} />
                                     <span className="toggle-slider"></span>
                                 </label>
                             </div>
@@ -742,47 +663,6 @@
                                 {editSaving ? 'Zapisywanie...' : 'Zapisz zmiany'}
                             </button>
                         </div>
-
-                        {/* Sekcja Sporty i poziom */}
-                        <div className="profile-card">
-                            <h4><i className="fas fa-medal" style={{color:'var(--primary)',marginRight:6}}></i> Moje sporty i poziom</h4>
-                            <p style={{fontSize:'0.8em',color:'#aaa',margin:'0 0 10px'}}>
-                                Dodaj sporty w których grasz i swój poziom zaawansowania
-                            </p>
-
-                            {/* Lista dodanych sportów */}
-                            <div className="sport-tags-wrap">
-                                {sports.length === 0
-                                    ? <span style={{fontSize:'0.8em',color:'#ccc'}}>Brak sportów — dodaj poniżej</span>
-                                    : sports.map((s, i) => (
-                                        <span key={i} className="sport-tag">
-                                            {s.name}
-                                            <span className={`level-badge level-${s.level}`} style={{marginLeft:4}}>
-                                                {{ P:'Pocz.', S:'Śred.', Z:'Zaaw.', A:'Amator' }[s.level]}
-                                            </span>
-                                            <span className="remove-sport" onClick={() => removeSport(i)}>✕</span>
-                                        </span>
-                                    ))
-                                }
-                            </div>
-
-                            {/* Formularz dodawania nowego sportu */}
-                            <div className="add-played-form" style={{marginTop:12}}>
-                                <label style={{fontSize:'0.8em',fontWeight:600,color:'#555',display:'block',marginBottom:4}}>Sport</label>
-                                <input type="text" placeholder="np. Tenis, Padel, Squash..."
-                                    value={newSportName} onChange={e => setNewSportName(e.target.value)} />
-                                <label style={{fontSize:'0.8em',fontWeight:600,color:'#555',display:'block',marginBottom:4}}>Poziom zaawansowania</label>
-                                <select value={newSportLevel} onChange={e => setNewSportLevel(e.target.value)}>
-                                    <option value="P">🟢 Początkujący</option>
-                                    <option value="S">🔵 Średniozaawansowany</option>
-                                    <option value="Z">🟠 Zaawansowany</option>
-                                    <option value="A">🔴 Amator wyczynowy</option>
-                                </select>
-                                <button className="btn-add-small" onClick={addSport} disabled={sportSaving || !newSportName.trim()}>
-                                    {sportSaving ? 'Zapisywanie...' : '+ Dodaj sport'}
-                                </button>
-                            </div>
-                        </div>
                     )}
 
                     {/* Przycisk wylogowania zawsze widoczny na dole */}
@@ -830,158 +710,33 @@
     }
 
 
-
-    // ════════════════════════════════════════════════════════════════
-    // KOMPONENT: FriendProfileModal
-    // Wyświetla pełny profil znajomego po kliknięciu jego imienia.
-    // Respektuje ustawienia prywatności znajomego (privacy.*).
-    // ════════════════════════════════════════════════════════════════
-    function FriendProfileModal({ friend, onClose }) {
-        if (!friend) return null;
-
-        // Odczyt flag prywatności z danych znajomego
-        const canSeeFav     = friend.privacy?.showFavourites !== false;
-        const canSeeHistory = friend.privacy?.showHistory    !== false;
-        const canSeeSports  = friend.privacy?.showSports     !== false;
-
-        const favItems = canSeeFav ? DATA.filter(d => (friend.favourites||[]).includes(d.id)) : [];
-        const played   = canSeeHistory ? (friend.playedHistory||[]) : [];
-        const initials = (friend.name||'?').charAt(0).toUpperCase();
-
-        // Etykiety poziomów zaawansowania
-        const levelMap = { P: 'Początkujący', S: 'Średniozaawansowany', Z: 'Zaawansowany', A: 'Amator wyczynowy' };
-        const resultLabel = { W: 'Wygrana', L: 'Przegrana', D: 'Remis' };
-
-        return (
-            <div className="friend-profile-modal" onClick={e => e.target === e.currentTarget && onClose()}>
-                <div className="friend-profile-sheet">
-                    {/* Nagłówek profilu znajomego */}
-                    <div className="friend-profile-header">
-                        <button className="friend-profile-close" onClick={onClose}>✕</button>
-                        <div className="profile-avatar-big" style={{margin:'0 auto 10px'}}>{initials}</div>
-                        <div className="profile-name">{friend.name}</div>
-                        {/* Sporty i poziom jeśli widoczne */}
-                        {canSeeSports && (friend.sports||[]).length > 0 && (
-                            <div style={{marginTop:8,display:'flex',flexWrap:'wrap',justifyContent:'center',gap:4}}>
-                                {(friend.sports||[]).map((s,i) => (
-                                    <span key={i} style={{background:'rgba(255,255,255,0.2)',color:'white',padding:'2px 10px',borderRadius:20,fontSize:'0.75em',fontWeight:600}}>
-                                        {s.name} · <span className={`level-badge level-${s.level}`} style={{background:'transparent',padding:0}}>{levelMap[s.level]||s.level}</span>
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="friend-profile-body">
-                        {/* Ulubione obiekty */}
-                        <div className="fp-card">
-                            <h4><i className="fas fa-heart" style={{color:'#e74c3c',marginRight:6}}></i> Ulubione obiekty</h4>
-                            {!canSeeFav
-                                ? <div className="hidden-info">🔒 Użytkownik ukrył ulubione</div>
-                                : favItems.length === 0
-                                    ? <div className="hidden-info">Brak ulubionych obiektów</div>
-                                    : <div className="friend-fav-list">{favItems.map(item => <span key={item.id} className="friend-fav-tag">🎾 {item.name}</span>)}</div>
-                            }
-                        </div>
-
-                        {/* Historia gier */}
-                        <div className="fp-card">
-                            <h4><i className="fas fa-history" style={{color:'var(--primary)',marginRight:6}}></i> Historia gier</h4>
-                            {!canSeeHistory
-                                ? <div className="hidden-info">🔒 Użytkownik ukrył historię</div>
-                                : played.length === 0
-                                    ? <div className="hidden-info">Brak wpisów</div>
-                                    : played.map((p,i) => (
-                                        <div key={i} className="fp-row">
-                                            <span>🎾 {p.court} {p.opponent && `· vs ${p.opponent}`}</span>
-                                            <span>
-                                                {p.result && <span className={`result-badge result-${p.result}`} style={{marginRight:4}}>{resultLabel[p.result]}</span>}
-                                                {new Date(p.date).toLocaleDateString('pl-PL',{day:'numeric',month:'short'})}
-                                            </span>
-                                        </div>
-                                    ))
-                            }
-                        </div>
-
-                        {/* Sporty i poziom */}
-                        {canSeeSports && (friend.sports||[]).length > 0 && (
-                            <div className="fp-card">
-                                <h4><i className="fas fa-medal" style={{color:'var(--primary)',marginRight:6}}></i> Sporty i poziom</h4>
-                                {(friend.sports||[]).map((s,i) => (
-                                    <div key={i} className="fp-row">
-                                        <span>{s.name}</span>
-                                        <span className={`level-badge level-${s.level}`}>{levelMap[s.level]||s.level}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // ════════════════════════════════════════════════════════════════
-    // KOMPONENT: FriendsScreen
-    // Zarządza znajomymi użytkownika. Obsługuje:
-    //   - System zaproszeń (wyślij → czeka na akceptację → akceptuj/odrzuć)
-    //   - Wyszukiwanie po imieniu lub e-mailu
-    //   - Kliknięcie imienia → otwiera FriendProfileModal
-    //
-    // Struktura danych w Firestore (users/{uid}):
-    //   friends[]       – UID zaakceptowanych znajomych
-    //   sentInvites[]   – UID do których wysłano zaproszenie (oczekuje)
-    //   pendingInvites[]– UID którzy zaprosili tego usera (czeka na odpowiedź)
-    // ════════════════════════════════════════════════════════════════
     function FriendsScreen({ user }) {
         const fb = window.__firebase;
-        const [subTab, setSubTab]           = useState('friends');
+        const [subTab, setSubTab] = useState('friends'); // 'friends' | 'search'
         const [searchQuery, setSearchQuery] = useState('');
         const [searchResults, setSearchResults] = useState([]);
-        const [searching, setSearching]     = useState(false);
+        const [searching, setSearching] = useState(false);
         const [searchError, setSearchError] = useState('');
-
-        // Zaakceptowani znajomi
-        const [friends, setFriends]         = useState([]);
+        const [friends, setFriends] = useState([]);
         const [friendsData, setFriendsData] = useState([]);
-        // Zaproszenia oczekujące na akceptację (ktoś mnie zaprosił)
-        const [pending, setPending]         = useState([]);
-        const [pendingData, setPendingData] = useState([]);
-        // UID do których wysłałem zaproszenie (czekam na odpowiedź)
-        const [sentInvites, setSentInvites] = useState([]);
-
         const [loadingFriends, setLoadingFriends] = useState(true);
-        // Stan modala profilu znajomego
-        const [viewFriend, setViewFriend]   = useState(null);
 
-        const userRef = fb.doc(fb.db, 'users', user.uid);
-
-        // Załaduj znajomych i zaproszenia przy starcie
+        // Załaduj listę znajomych
         useEffect(() => {
             if (!user) return;
-            fb.getDoc(userRef).then(async snap => {
-                if (!snap.exists()) { setLoadingFriends(false); return; }
-                const data = snap.data();
-                const friendUids  = data.friends        || [];
-                const pendingUids = data.pendingInvites || [];
-                const sentUids    = data.sentInvites    || [];
-
+            fb.getDoc(fb.doc(fb.db, 'users', user.uid)).then(snap => {
+                const friendUids = snap.exists() ? (snap.data().friends || []) : [];
                 setFriends(friendUids);
-                setSentInvites(sentUids);
-                setPending(pendingUids);
-
-                // Załaduj dane znajomych i oczekujących równolegle
-                const [friendSnaps, pendingSnaps] = await Promise.all([
-                    Promise.all(friendUids.map(uid => fb.getDoc(fb.doc(fb.db, 'users', uid)))),
-                    Promise.all(pendingUids.map(uid => fb.getDoc(fb.doc(fb.db, 'users', uid)))),
-                ]);
-                setFriendsData(friendSnaps.filter(s => s.exists()).map(s => ({ uid: s.id, ...s.data() })));
-                setPendingData(pendingSnaps.filter(s => s.exists()).map(s => ({ uid: s.id, ...s.data() })));
-                setLoadingFriends(false);
+                if (friendUids.length === 0) { setLoadingFriends(false); return; }
+                // Załaduj dane każdego znajomego
+                Promise.all(friendUids.map(uid => fb.getDoc(fb.doc(fb.db, 'users', uid))))
+                    .then(snaps => {
+                        setFriendsData(snaps.filter(s => s.exists()).map(s => ({ uid: s.id, ...s.data() })));
+                        setLoadingFriends(false);
+                    });
             });
         }, [user?.uid]);
 
-        // Wyszukaj użytkowników po imieniu lub e-mailu
         const handleSearch = async () => {
             setSearchError('');
             if (searchQuery.trim().length < 2) return setSearchError('Wpisz min. 2 znaki.');
@@ -991,87 +746,27 @@
                 const term = searchQuery.trim().toLowerCase();
                 const results = snap.docs
                     .map(d => ({ uid: d.id, ...d.data() }))
-                    .filter(u => u.uid !== user.uid &&
-                        ((u.name||'').toLowerCase().includes(term) ||
-                         (u.email||'').toLowerCase().includes(term)));
+                    .filter(u => u.uid !== user.uid && ((u.name||'').toLowerCase().includes(term) || (u.email||'').toLowerCase().includes(term)));
                 setSearchResults(results);
-                if (results.length === 0) setSearchError('Nie znaleziono użytkowników.');
-            } catch(e) { setSearchError('Błąd wyszukiwania.'); }
+                if (results.length === 0) setSearchError('Nie znaleziono użytkowników o takiej nazwie.');
+            } catch(e) { setSearchError('Błąd wyszukiwania. Spróbuj ponownie.'); }
             setSearching(false);
         };
 
-        // Wyślij zaproszenie do znajomego
-        // Dodaje UID do sentInvites nadawcy i pendingInvites odbiorcy
-        const sendInvite = async (targetUid) => {
-            const newSent = [...sentInvites, targetUid];
-            setSentInvites(newSent);
-            // Zaktualizuj moją listę wysłanych zaproszeń
-            await fb.setDoc(userRef, { sentInvites: newSent }, { merge: true });
-            // Dodaj mój UID do listy oczekujących odbiorcy
-            const targetRef = fb.doc(fb.db, 'users', targetUid);
-            const targetSnap = await fb.getDoc(targetRef);
-            const targetPending = targetSnap.exists() ? (targetSnap.data().pendingInvites || []) : [];
-            if (!targetPending.includes(user.uid)) {
-                await fb.setDoc(targetRef, { pendingInvites: [...targetPending, user.uid] }, { merge: true });
-            }
-        };
-
-        // Akceptuj zaproszenie od kogoś
-        // Dodaje obie strony do swoich list friends i czyści zaproszenia
-        const acceptInvite = async (senderUid) => {
-            // Dodaj do znajomych po obu stronach
-            const myNewFriends     = [...friends, senderUid];
-            const newPending       = pending.filter(id => id !== senderUid);
-            setFriends(myNewFriends);
-            setPending(newPending);
-            setPendingData(prev => prev.filter(p => p.uid !== senderUid));
-
-            // Zaktualizuj mój dokument
-            await fb.setDoc(userRef, { friends: myNewFriends, pendingInvites: newPending }, { merge: true });
-
-            // Zaktualizuj dokument nadawcy — dodaj mnie do jego znajomych i wyczyść sentInvites
-            const senderRef  = fb.doc(fb.db, 'users', senderUid);
-            const senderSnap = await fb.getDoc(senderRef);
-            if (senderSnap.exists()) {
-                const senderData    = senderSnap.data();
-                const senderFriends = [...(senderData.friends || []), user.uid];
-                const senderSent    = (senderData.sentInvites || []).filter(id => id !== user.uid);
-                await fb.setDoc(senderRef, { friends: senderFriends, sentInvites: senderSent }, { merge: true });
-            }
-
-            // Załaduj dane nowego znajomego do listy
-            const snap = await fb.getDoc(fb.doc(fb.db, 'users', senderUid));
+        const addFriend = async (friendUid) => {
+            const newFriends = [...friends, friendUid];
+            setFriends(newFriends);
+            await fb.setDoc(fb.doc(fb.db, 'users', user.uid), { friends: newFriends }, { merge: true });
+            // Załaduj dane nowego znajomego
+            const snap = await fb.getDoc(fb.doc(fb.db, 'users', friendUid));
             if (snap.exists()) setFriendsData(prev => [...prev, { uid: snap.id, ...snap.data() }]);
         };
 
-        // Odrzuć zaproszenie
-        const declineInvite = async (senderUid) => {
-            const newPending = pending.filter(id => id !== senderUid);
-            setPending(newPending);
-            setPendingData(prev => prev.filter(p => p.uid !== senderUid));
-            await fb.setDoc(userRef, { pendingInvites: newPending }, { merge: true });
-            // Wyczyść sentInvites u nadawcy
-            const senderRef  = fb.doc(fb.db, 'users', senderUid);
-            const senderSnap = await fb.getDoc(senderRef);
-            if (senderSnap.exists()) {
-                const senderSent = (senderSnap.data().sentInvites || []).filter(id => id !== user.uid);
-                await fb.setDoc(senderRef, { sentInvites: senderSent }, { merge: true });
-            }
-        };
-
-        // Usuń znajomego z obu stron
         const removeFriend = async (friendUid) => {
             const newFriends = friends.filter(id => id !== friendUid);
             setFriends(newFriends);
             setFriendsData(prev => prev.filter(f => f.uid !== friendUid));
-            await fb.setDoc(userRef, { friends: newFriends }, { merge: true });
-            // Usuń z listy znajomego po jego stronie
-            const friendRef  = fb.doc(fb.db, 'users', friendUid);
-            const friendSnap = await fb.getDoc(friendRef);
-            if (friendSnap.exists()) {
-                const theirFriends = (friendSnap.data().friends || []).filter(id => id !== user.uid);
-                await fb.setDoc(friendRef, { friends: theirFriends }, { merge: true });
-            }
+            await fb.setDoc(fb.doc(fb.db, 'users', user.uid), { friends: newFriends }, { merge: true });
         };
 
         if (!user) {
@@ -1086,21 +781,15 @@
 
         return (
             <div className="container">
-                {/* Modal profilu znajomego */}
-                {viewFriend && <FriendProfileModal friend={viewFriend} onClose={() => setViewFriend(null)} />}
-
-                {/* Zakładki: Znajomi / Szukaj */}
                 <div className="tabs-mini">
                     <button className={`tab-mini ${subTab==='friends'?'active':''}`} onClick={() => setSubTab('friends')}>
                         <i className="fas fa-user-friends"></i> Znajomi ({friends.length})
-                        {pending.length > 0 && <span className="invite-badge">{pending.length}</span>}
                     </button>
                     <button className={`tab-mini ${subTab==='search'?'active':''}`} onClick={() => setSubTab('search')}>
                         <i className="fas fa-search"></i> Szukaj
                     </button>
                 </div>
 
-                {/* ── Zakładka SZUKAJ ── */}
                 {subTab === 'search' && (
                     <div>
                         <div className="friends-search-bar">
@@ -1118,17 +807,11 @@
                                     <div className="friend-avatar">{(result.name||'?').charAt(0).toUpperCase()}</div>
                                     <div className="friend-info">
                                         <h5>{result.name}</h5>
-                                        <span style={{fontSize:'0.75em',color:'#888'}}>
-                                            {friends.includes(result.uid) ? '✔ Znajomy' :
-                                             sentInvites.includes(result.uid) ? '⏳ Zaproszenie wysłane' : 'Użytkownik Activo'}
-                                        </span>
+                                        <span>{(result.favourites||[]).length} ulubionych obiektów</span>
                                     </div>
-                                    {/* Przyciski zależne od stanu relacji */}
                                     {friends.includes(result.uid)
-                                        ? <button className="btn-remove-friend" onClick={() => removeFriend(result.uid)}>Usuń</button>
-                                        : sentInvites.includes(result.uid)
-                                            ? <button className="btn-pending" disabled>Wysłano</button>
-                                            : <button className="btn-add-friend" onClick={() => sendInvite(result.uid)}>+ Zaproś</button>
+                                        ? <button className="btn-remove-friend" onClick={() => removeFriend(result.uid)}>✔ Dodano</button>
+                                        : <button className="btn-add-friend" onClick={() => addFriend(result.uid)}>+ Dodaj</button>
                                     }
                                 </div>
                             </div>
@@ -1136,62 +819,57 @@
                     </div>
                 )}
 
-                {/* ── Zakładka ZNAJOMI ── */}
                 {subTab === 'friends' && (
                     <div>
-                        {/* Oczekujące zaproszenia */}
-                        {pendingData.length > 0 && (
-                            <>
-                                <div style={{fontSize:'0.78em',fontWeight:700,color:'#888',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:8}}>
-                                    Zaproszenia ({pendingData.length})
-                                </div>
-                                {pendingData.map(sender => (
-                                    <div key={sender.uid} className="invite-card">
-                                        <div className="invite-card-header">
-                                            <div className="friend-avatar" style={{width:38,height:38,fontSize:'0.95em'}}>
-                                                {(sender.name||'?').charAt(0).toUpperCase()}
-                                            </div>
-                                            <div className="friend-info">
-                                                <h5>{sender.name}</h5>
-                                                <span style={{fontSize:'0.75em',color:'#aaa'}}>Chce Cię dodać do znajomych</span>
-                                            </div>
-                                        </div>
-                                        <div className="invite-actions">
-                                            <button className="btn-accept" onClick={() => acceptInvite(sender.uid)}>✔ Akceptuj</button>
-                                            <button className="btn-decline" onClick={() => declineInvite(sender.uid)}>✕ Odrzuć</button>
-                                        </div>
-                                    </div>
-                                ))}
-                                <div style={{fontSize:'0.78em',fontWeight:700,color:'#888',textTransform:'uppercase',letterSpacing:'0.05em',margin:'16px 0 8px'}}>
-                                    Znajomi ({friendsData.length})
-                                </div>
-                            </>
-                        )}
-
                         {loadingFriends && <div className="section-empty">Ładowanie...</div>}
-                        {!loadingFriends && friendsData.length === 0 && pendingData.length === 0 && (
-                            <div className="section-empty">Brak znajomych — przejdź do "Szukaj" i zaproś kogoś!</div>
-                        )}
-
-                        {/* Lista zaakceptowanych znajomych — kliknięcie imienia otwiera profil */}
-                        {friendsData.map(friend => (
-                            <div key={friend.uid} className="friend-card">
-                                <div className="friend-card-header">
-                                    <div className="friend-avatar" style={{cursor:'pointer'}} onClick={() => setViewFriend(friend)}>
-                                        {(friend.name||'?').charAt(0).toUpperCase()}
-                                    </div>
-                                    <div className="friend-info" style={{cursor:'pointer'}} onClick={() => setViewFriend(friend)}>
-                                        <h5 style={{color:'var(--dark)'}}>{friend.name} <i className="fas fa-chevron-right" style={{fontSize:'0.7em',color:'#ccc'}}></i></h5>
-                                        <span>
-                                            {friend.privacy?.showSports !== false && (friend.sports||[]).length > 0
-                                                ? (friend.sports||[]).map(s => s.name).join(', ')
-                                                : 'Kliknij aby zobaczyć profil'}
-                                        </span>
-                                    </div>
-                                    <button className="btn-remove-friend" onClick={() => removeFriend(friend.uid)}>Usuń</button>
-                                </div>
+                        {!loadingFriends && friendsData.length === 0 && (
+                            <div className="section-empty">
+                                Brak znajomych — przejdź do zakładki "Szukaj" i dodaj kogoś!
                             </div>
-                        ))}
+                        )}
+                        {friendsData.map(friend => {
+                            // Sprawdź flagi prywatności znajomego zanim pokażesz dane
+                            const canSeeFav     = friend.privacy?.showFavourites !== false;
+                            const canSeeHistory = friend.privacy?.showHistory !== false;
+                            const favItems = canSeeFav ? DATA.filter(d => (friend.favourites||[]).includes(d.id)) : [];
+                            const played   = canSeeHistory ? (friend.playedHistory||[]).slice(0,3) : [];
+                            return (
+                                <div key={friend.uid} className="friend-card">
+                                    <div className="friend-card-header">
+                                        <div className="friend-avatar">{(friend.name||'?').charAt(0).toUpperCase()}</div>
+                                        <div className="friend-info">
+                                            <h5>{friend.name}</h5>
+                                            <span>{favItems.length} ulubionych · {(friend.playedHistory||[]).length} gier</span>
+                                        </div>
+                                        <button className="btn-remove-friend" onClick={() => removeFriend(friend.uid)}>Usuń</button>
+                                    </div>
+                                    {favItems.length > 0 && (
+                                        <>
+                                            <div className="friend-section-title"><i className="fas fa-heart" style={{color:'#e74c3c',marginRight:4}}></i> Ulubione obiekty</div>
+                                            <div className="friend-fav-list">
+                                                {favItems.map(item => <span key={item.id} className="friend-fav-tag">🎾 {item.name}</span>)}
+                                            </div>
+                                        </>
+                                    )}
+                                    {played.length > 0 && (
+                                        <>
+                                            <div className="friend-section-title"><i className="fas fa-history" style={{marginRight:4}}></i> Ostatnio grał</div>
+                                            <div className="friend-played-list">
+                                                {played.map((p,i) => (
+                                                    <div key={i} className="friend-played-item">
+                                                        <span>🎾 {p.court}</span>
+                                                        <span>{new Date(p.date).toLocaleDateString('pl-PL',{day:'numeric',month:'short'})}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+                                    {favItems.length === 0 && played.length === 0 && (
+                                        <div style={{fontSize:'0.8em',color:'#bbb',textAlign:'center',padding:'6px 0'}}>Brak aktywności</div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
